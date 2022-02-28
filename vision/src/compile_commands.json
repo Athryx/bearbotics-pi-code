@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/jack/projects/frc/vision_new/src/build",
+  "command": "/usr/bin/c++  -isystem /usr/include/opencv4  -fpermissive -std=gnu++17 -o CMakeFiles/Vision.dir/main.cpp.o -c /home/jack/projects/frc/vision_new/src/main.cpp",
+  "file": "/home/jack/projects/frc/vision_new/src/main.cpp"
+},
+{
+  "directory": "/home/jack/projects/frc/vision_new/src/build",
+  "command": "/usr/bin/c++  -isystem /usr/include/opencv4  -fpermissive -std=gnu++17 -o CMakeFiles/Vision.dir/util.cpp.o -c /home/jack/projects/frc/vision_new/src/util.cpp",
+  "file": "/home/jack/projects/frc/vision_new/src/util.cpp"
+},
+{
+  "directory": "/home/jack/projects/frc/vision_new/src/build",
+  "command": "/usr/bin/c++  -isystem /usr/include/opencv4  -fpermissive -std=gnu++17 -o CMakeFiles/Vision.dir/vision.cpp.o -c /home/jack/projects/frc/vision_new/src/vision.cpp",
+  "file": "/home/jack/projects/frc/vision_new/src/vision.cpp"
+}
+]
