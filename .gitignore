@@ -2,3 +2,4 @@
 build
 .cache
 */.cache
+vision-manager/target
