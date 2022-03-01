@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
 	program.add_argument("-t", "--topic")
 		.help("mqtt topic to publish data to")
-		.default_value(std::string {"PI/CV/SHOOT/DATA"});
+		.default_value(std::string {"pi/cv/data"});
 
 	program.add_argument("-f", "--fps")
 		.help("maximum frames per second")

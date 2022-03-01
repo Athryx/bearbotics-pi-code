@@ -1,29 +1,53 @@
-use gstreamer::prelude::{ElementExt, GstBinExtManual};
-use gstreamer::{State, MessageType, ElementFactory, Pipeline};
+#[macro_use] extern crate log;
+
+use std::path::PathBuf;
+
+use clap::Parser;
+use remote_viewing::RemoteViewing;
+
+mod vision;
+mod remote_viewing;
+
+#[derive(Debug, Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+	// path to vision executable
+	//#[clap(short = 'v', long = "vision", parse(from_os_str))]
+	//vision_path: PathBuf,
+
+	/// Host to connect to for mqtt broker
+	#[clap(short = 'm', long = "mqtt-host", default_value_t = String::from("localhost"))]
+	mqtt_host: String,
+
+	/// Port to use when connecting to mqtt broker
+	#[clap(short = 'p', long = "mqtt-port", parse(try_from_str), default_value_t = 1883)]
+	mqtt_port: u16,
+
+	/// Mqtt topic to listen on for commands
+	#[clap(short, long, default_value_t = String::from("pi/control"))]
+	topic: String,
+
+	/// Host to send remote viewing video to
+	// for some reason localhost doesn't work here
+	#[clap(short = 'r', long = "rtp-host", default_value_t = String::from("127.0.0.1"))]
+	rtp_host: String,
+
+	/// Port to send remote viewing video over
+	#[clap(short = 'o', long = "rtp-port", default_value_t = 5000)]
+	rtp_port: u16,
+}
 
 fn main() {
 	env_logger::init();
 
-	gstreamer::init().unwrap();
+	let args = Args::parse();
 
-	let source = ElementFactory::make("videotestsrc", Some("source")).unwrap();
-	let sink = ElementFactory::make("autovideosink", Some("sink")).unwrap();
+	gstreamer::init().expect("failed to initilize gstreamer");
 
-	let pipeline = Pipeline::new(Some("test-pipeline"));
+	let mut remote_viewing = RemoteViewing::new(&args.rtp_host, args.rtp_port).unwrap();
 
-	pipeline.add_many(&[&source, &sink]).unwrap();
+	assert!(remote_viewing.start());
 
-	source.link(&sink).unwrap();
-	//source.set_properties(&[("pattern", &)]);
-
-	pipeline.set_state(State::Playing).unwrap();
-
-	let bus = pipeline.bus().unwrap();
-	let message = bus.timed_pop_filtered(None, &[MessageType::Error, MessageType::Eos]).unwrap();
-
-	pipeline.set_state(State::Null).unwrap();
-
-	if message.type_() == MessageType::Error {
-		panic!("message is an error");
+	loop {
 	}
 }
