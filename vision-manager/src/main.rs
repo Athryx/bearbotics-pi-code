@@ -5,36 +5,38 @@ use std::path::PathBuf;
 use clap::Parser;
 use remote_viewing::RemoteViewing;
 
+use crate::vision::Vision;
+
 mod vision;
 mod remote_viewing;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-	// path to vision executable
-	//#[clap(short = 'v', long = "vision", parse(from_os_str))]
-	//vision_path: PathBuf,
+	/// path to vision executable
+	#[clap(short = 'v', long = "vision", parse(from_os_str))]
+	pub vision_path: PathBuf,
 
 	/// Host to connect to for mqtt broker
 	#[clap(short = 'm', long = "mqtt-host", default_value_t = String::from("localhost"))]
-	mqtt_host: String,
+	pub mqtt_host: String,
 
 	/// Port to use when connecting to mqtt broker
 	#[clap(short = 'p', long = "mqtt-port", parse(try_from_str), default_value_t = 1883)]
-	mqtt_port: u16,
+	pub mqtt_port: u16,
 
 	/// Mqtt topic to listen on for commands
 	#[clap(short, long, default_value_t = String::from("pi/control"))]
-	topic: String,
+	pub topic: String,
 
 	/// Host to send remote viewing video to
 	// for some reason localhost doesn't work here
 	#[clap(short = 'r', long = "rtp-host", default_value_t = String::from("127.0.0.1"))]
-	rtp_host: String,
+	pub rtp_host: String,
 
 	/// Port to send remote viewing video over
 	#[clap(short = 'o', long = "rtp-port", default_value_t = 5000)]
-	rtp_port: u16,
+	pub rtp_port: u16,
 }
 
 fn main() {
@@ -45,6 +47,7 @@ fn main() {
 	gstreamer::init().expect("failed to initilize gstreamer");
 
 	let mut remote_viewing = RemoteViewing::new(&args.rtp_host, args.rtp_port).unwrap();
+	let mut vision = Vision::new(&args);
 
 	assert!(remote_viewing.start());
 
