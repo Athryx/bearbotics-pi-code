@@ -1,4 +1,7 @@
 use std::process::{Command, Child};
+
+use anyhow::{Result, Error, Context};
+
 use crate::Args;
 
 pub struct Vision {
@@ -20,25 +23,16 @@ impl Vision {
 		}
 	}
 
-	pub fn start(&mut self) -> bool {
-		if self.process.is_none() {
-			let child = self.command.spawn();
-			if let Ok(child) = child {
-				self.process = Some(child);
-				true
-			} else {
-				false
-			}
-		} else {
-			false
+	pub fn start(&mut self) -> Result<()> {
+		if self.process.is_some() {
+			return Err(Error::msg("vision is not stopped"))
 		}
+		self.process = Some(self.command.spawn().context("could not spawn vision")?);
+		Ok(())
 	}
 
-	pub fn stop(&mut self) -> bool {
-		if let Some(mut child) = self.process {
-			child.kill().is_ok()
-		} else {
-			false
-		}
+	pub fn stop(&mut self) -> Result<()> {
+		let process = self.process.as_mut().ok_or_else(|| Error::msg("vision is not started"))?;
+		process.kill().context("could not stop vision, or vision was already stopped due to an erouneous exit")
 	}
 }

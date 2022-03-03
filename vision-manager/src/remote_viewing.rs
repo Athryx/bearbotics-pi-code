@@ -1,5 +1,6 @@
 use gstreamer::prelude::{ElementExt, GstBinExtManual, Continue};
 use gstreamer::{State, MessageType, ElementFactory, Pipeline, Element, Bus, Message};
+use anyhow::Result;
 
 pub struct RemoteViewing {
 	pipeline: Element,
@@ -40,13 +41,15 @@ impl RemoteViewing {
 	}
 
 	// returns true if sucessfully started
-	pub fn start(&mut self) -> bool {
-		self.pipeline.set_state(State::Playing).is_ok()
+	pub fn start(&mut self) -> Result<()> {
+		anyhow::Context::context(self.pipeline.set_state(State::Playing), "could not start remote viewing")?;
+		Ok(())
 	}
 
 	// returns true if sucessfully stopped
-	pub fn stop(&mut self) -> bool {
-		self.pipeline.set_state(State::Paused).is_ok()
+	pub fn stop(&mut self) -> Result<()> {
+		anyhow::Context::context(self.pipeline.set_state(State::Paused), "could not stop remote viewing")?;
+		Ok(())
 	}
 }
 

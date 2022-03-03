@@ -13,9 +13,14 @@ mod remote_viewing;
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-	/// path to vision executable
+	/// Path to vision executable
 	#[clap(short = 'v', long = "vision", parse(from_os_str))]
 	pub vision_path: PathBuf,
+
+	/// Extra agruments that are passed to the vision program
+	/// Arguments should be seperated by space
+	#[clap(short = 'a', long = "vision-args", default_value_t = String::from(""))]
+	pub vision_args: String,
 
 	/// Host to connect to for mqtt broker
 	#[clap(short = 'm', long = "mqtt-host", default_value_t = String::from("localhost"))]
@@ -44,12 +49,18 @@ fn main() {
 
 	let args = Args::parse();
 
+	let mut vision_args = Vec::new();
+
+	for vision_arg in args.vision_args.split(' ') {
+		vision_args.push(vision_arg);
+	}
+
 	gstreamer::init().expect("failed to initilize gstreamer");
 
 	let mut remote_viewing = RemoteViewing::new(&args.rtp_host, args.rtp_port).unwrap();
-	let mut vision = Vision::new(&args);
+	let mut vision = Vision::new(args.vision_path.to_str().unwrap(), &args.mqtt_host, args.mqtt_port, &vision_args);
 
-	assert!(remote_viewing.start());
+	remote_viewing.start().unwrap();
 
 	loop {
 	}
