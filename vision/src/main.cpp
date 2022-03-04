@@ -33,6 +33,10 @@ int main(int argc, char **argv) {
 		.help("mqtt topic to publish data to")
 		.default_value(std::string {"pi/cv/data"});
 
+	program.add_argument("-c", "--control-topic")
+		.help("mqtt topic to recieve commands from to switch modes between remote viewing and vision")
+		.default_value(std::string {"pi/control"});
+
 	program.add_argument("-f", "--fps")
 		.help("maximum frames per second")
 		.default_value(120)
@@ -61,7 +65,7 @@ int main(int argc, char **argv) {
 			return std::atoi(str.c_str());
 		});
 
-	program.add_argument("-c", "--camera")
+	program.add_argument("-a", "--camera")
 		.help("camera device file name to process, if no file name is given, use camera 0")
 		.default_value(std::optional<std::string> {})
 		.action([] (const std::string& str) -> std::optional<std::string> {
@@ -94,6 +98,7 @@ int main(int argc, char **argv) {
 	// TODO: maybe it is ugly to have a boolean and mqtt_client, maybe use an optional?
 	const bool mqtt_flag = program.is_used("-m");
 	const auto mqtt_topic = program.get("-t");
+	const auto mqtt_control_topic = program.get("-c");
 	// XXX: if mqtt_flag is set, this is guaranteed to be a valid pointer
 	struct mosquitto *mqtt_client = nullptr;
 	if (mqtt_flag) {
@@ -115,7 +120,7 @@ int main(int argc, char **argv) {
 	}
 
 	cv::VideoCapture cap;
-	auto file_name = program.get<std::optional<std::string>>("-c");
+	auto file_name = program.get<std::optional<std::string>>("-a");
 	if (file_name.has_value()) {
 		cap.open(*file_name, cv::CAP_V4L2);
 	} else {
@@ -169,8 +174,7 @@ int main(int argc, char **argv) {
 		if (mqtt_flag) {
 			if (target.has_value()) {
 				snprintf(msg, msg_len, "1 %6.2f %6.2f", target->distance, target->angle);
-			}
-			else {
+			} else {
 				snprintf(msg, msg_len, "0 %6.2f %6.2f", 0.0f, 0.0f);
 			}
 
@@ -186,6 +190,8 @@ int main(int argc, char **argv) {
 		// this is necessary to poll events for opencv highgui
 		if (display_flag) cv::pollKey();
 	}
+
+	cap.release();
 
 	if (mqtt_flag) {
 		mosquitto_destroy(mqtt_client);

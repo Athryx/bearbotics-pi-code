@@ -4,15 +4,13 @@
 #include "parallel.h"
 #include <math.h>
 
-Vision::Vision(cv::Mat template_img, int threads, bool display)
-: m_threads(threads)
-, m_display(display)
-{
+Vision::Vision(cv::Mat template_img, int threads, bool display):
+m_threads(threads),
+m_display(display) {
 	process_template(template_img);
 }
 
-Vision::~Vision() {
-}
+Vision::~Vision() {}
 
 void Vision::set_threads(int threads) {
 	m_threads = threads;

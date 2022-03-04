@@ -2,15 +2,13 @@
 #include <sys/time.h>
 
 // gets microseconds since unix epoch
-long get_usec()
-{
+long get_usec() {
 	struct timeval tv;
 	gettimeofday(&tv, nullptr);
 	return 1000000 * tv.tv_sec + tv.tv_usec;
 }
 
-void time(const char *op_name, std::function<void ()> op, long *out_time)
-{
+void time(const char *op_name, std::function<void ()> op, long *out_time) {
 	long old_usec = get_usec();
 	op();
 	long new_usec = get_usec();
