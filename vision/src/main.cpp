@@ -5,7 +5,6 @@
 #include "util.h"
 #include <gst/gst.h>
 #include <opencv2/opencv.hpp>
-#include <mosquitto.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -13,6 +12,16 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
+
+enum class Mode {
+	Vision,
+	RemoteViewing
+};
+
+enum class Team {
+	Red,
+	Blue
+};
 
 argparse::ArgumentParser parse_args(int argc, char **argv) {
 	argparse::ArgumentParser program("vision", "0.1.0");
@@ -49,10 +58,28 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		.help("mqtt topic to recieve commands from to switch modes between remote viewing and vision")
 		.default_value(std::string {"pi/cv/control"});
 
+	program.add_argument("-e", "--error-topic")
+		.help("mqtt topic to send error information on")
+		.default_value(std::string {"pi/cv/error"});
+
+
 	program.add_argument("-r", "--remote-viewing")
 		.help("mode to start in, by default it is vision, unless this flag is specified, than it starts in remote viewing")
-		.default_value(false)
-		.implicit_value(true);
+		.default_value(Mode::Vision)
+		.implicit_value(Mode::RemoteViewing);
+
+	program.add_argument("--team")
+		.help("what team to recognise balls for, default is red")
+		.default_value(Team::Red)
+		.action([] (const std::string& str) {
+			if (str == "red") {
+				return Team::Red;
+			} else if (str == "blue") {
+				return Team::Blue;
+			} else {
+				throw std::runtime_error("invalid argument for --team: must be either 'red' or 'blue'");
+			}
+		});
 
 
 	// TODO: make these settings apply to remote viewing or add seperate settings fro remote viewing
@@ -114,14 +141,10 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 	return program;
 }
 
-enum class Mode {
-	Vision,
-	RemoteViewing
-};
-
 // passed to mqtt message callback
 struct MqttData {
 	Mode mode;
+	Team team;
 	// is none under normal circumstances, sets to Some(old mode) after mode change
 	std::optional<Mode> old_mode {};
 	const std::string& control_topic;
@@ -172,20 +195,14 @@ int main(int argc, char **argv) {
 	cv::setNumThreads(threads);
 
 
-	Mode default_mode;
-	if (program.get<bool>("--remote-viewing")) {
-		default_mode = Mode::RemoteViewing;
-	} else {
-		default_mode = Mode::Vision;
-	}
-
 	// TODO: maybe it is ugly to have a boolean and mqtt_client, maybe use an optional?
 	const bool mqtt_flag = program.is_used("--mqtt");
 	const auto mqtt_topic = program.get("--topic");
 	const auto mqtt_control_topic = program.get("--control-topic");
 
 	auto mqtt_data = MqttData {
-		.mode = default_mode,
+		.mode = program.get<Mode>("--remote-viewing"),
+		.team = program.get<Team>("--team"),
 		.control_topic = mqtt_control_topic
 	};
 
