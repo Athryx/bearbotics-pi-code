@@ -127,6 +127,7 @@ struct MqttData {
 	const std::string& control_topic;
 };
 
+// TODO: be able to set team
 void mqtt_message_callback(mosquitto *mosq, void *data_in, const mosquitto_message *msg) {
 	MqttData *data = (MqttData *) data_in;
 
@@ -239,6 +240,17 @@ int main(int argc, char **argv) {
 	long total_time = 0;
 	long frames = 0;
 
+	// enable device for initial mode
+	switch (mqtt_data.mode) {
+		case Mode::Vision:
+			// TODO: handle when this fails
+			camera.start();
+			break;
+		case Mode::RemoteViewing:
+			// TODO: handle when this fails
+			remote_viewing.stop();
+			break;
+	}
 
 	// TODO: don't constantly loop
 	for(;;) {
@@ -274,7 +286,7 @@ int main(int argc, char **argv) {
 				cv::Mat frame;
 				camera.read_to(frame);
 				if (frame.empty()) {
-					printf("warning: empty frame recieved, skipping vision processing");
+					printf("warning: empty frame recieved, skipping vision processing\n");
 					continue;
 				}
 
