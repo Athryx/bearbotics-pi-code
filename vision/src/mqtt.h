@@ -25,7 +25,7 @@ class MqttClient {
 		template<typename T>
 		bool subscribe(const std::string& topic, void (*callback)(std::string_view, T*), T* data) {
 			auto callback_data = CallbackData {
-				.callback = callback,
+				.callback = (void (*)(std::string_view, void*)) callback,
 				.data = data
 			};
 

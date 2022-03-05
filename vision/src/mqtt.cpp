@@ -1,6 +1,7 @@
 #include "mqtt.h"
 #include <mosquitto.h>
 #include <unistd.h>
+#include <stdexcept>
 
 MqttClient::MqttClient() {}
 
@@ -44,10 +45,19 @@ bool MqttClient::publish(const std::string& topic, const std::string &payload) {
 void MqttClient::unsubscribe(const std::string& topic) {
 	m_callbacks.erase(topic);
 	if(mosquitto_unsubscribe(m_client, nullptr, topic.c_str())) {
-		printf("warning: failed to unsubscribe from mqtt topic %s", topic.c_str());
+		printf("warning: failed to unsubscribe from mqtt topic %s\n", topic.c_str());
 	}
 }
 
-static void mqtt_message_callback(mosquitto *mosq, void *data, const mosquitto_message *msg) {
+void MqttClient::mqtt_message_callback(mosquitto *mosq, void *data, const mosquitto_message *msg) {
 	MqttClient *client = (MqttClient *) data;
+	std::string topic(msg->topic);
+
+	try {
+		auto callback = client->m_callbacks.at(topic);
+		callback.callback(std::string_view((char *) msg->payload, msg->payloadlen), callback.data);
+	} catch (const std::out_of_range& err) {
+		printf("warning: no callback for topic %s\n", topic.c_str());
+		return;
+	}
 }

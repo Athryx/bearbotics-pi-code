@@ -1,3 +1,4 @@
+#include "mqtt.h"
 #include "types.h"
 #include "argparse.hpp"
 #include "vision.h"
@@ -10,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <string_view>
 #include <algorithm>
 #include <iostream>
 
@@ -145,35 +147,22 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 struct MqttData {
 	Mode mode;
 	Team team;
-	// is none under normal circumstances, sets to Some(old mode) after mode change
+	// this will be none under normal circumstances, and set to Some(old mode) after mode change
 	std::optional<Mode> old_mode {};
-	const std::string& control_topic;
 };
 
 // TODO: be able to set team
-void mqtt_message_callback(mosquitto *mosq, void *data_in, const mosquitto_message *msg) {
-	MqttData *data = (MqttData *) data_in;
+void mqtt_control_callback(std::string_view msg, MqttData *data) {
+	Mode new_mode;
+	if (msg == "vision") {
+		new_mode = Mode::Vision;
+	} else if (msg == "remote-viewing") {
+		new_mode = Mode::RemoteViewing;
+	}
 
-	bool matches = false;
-	mosquitto_topic_matches_sub(data->control_topic.c_str(), msg->topic, &matches);
-
-	if(matches) {
-		const char *vstr = "vision";
-		const char *rstr = "remote-viewing";
-		usize vlen = strlen(vstr);
-		usize rlen = strlen(rstr);
-
-		Mode new_mode;
-		if (vlen == msg->payloadlen && strncmp(vstr, (char *) msg->payload, msg->payloadlen) == 0) {
-			new_mode = Mode::Vision;
-		} else if (rlen == msg->payloadlen && strncmp(rstr, (char *) msg->payload, msg->payloadlen) == 0) {
-			new_mode = Mode::RemoteViewing;
-		}
-
-		if (new_mode != data->mode) {
-			data->old_mode = data->mode;
-			data->mode = new_mode;
-		}
+	if (new_mode != data->mode) {
+		data->old_mode = data->mode;
+		data->mode = new_mode;
 	}
 }
 
@@ -203,31 +192,24 @@ int main(int argc, char **argv) {
 	auto mqtt_data = MqttData {
 		.mode = program.get<Mode>("--remote-viewing"),
 		.team = program.get<Team>("--team"),
-		.control_topic = mqtt_control_topic
 	};
 
 	// XXX: if mqtt_flag is set, this is guaranteed to be a valid pointer
-	mosquitto *mqtt_client = nullptr;
+	std::optional<MqttClient> mqtt_client;
 	if (mqtt_flag) {
+		mosquitto_lib_init();
+
 		auto host_name = program.get("--mqtt");
 		const int mqtt_port = program.get<int>("--port");
-		auto client_name = std::string {"vision_"} + std::to_string(getpid());
 
-		mosquitto_lib_init();
-		mqtt_client = mosquitto_new(client_name.c_str(), true, &mqtt_data);
-		if (mqtt_client == nullptr) {
-			printf("couldn't create MQTT client\n");
+		mqtt_client = MqttClient::create(host_name, mqtt_port);
+
+		if (!mqtt_client.has_value()) {
+			printf("error: could not create MqttClient");
 			exit(1);
 		}
 
-		mosquitto_message_callback_set(mqtt_client, mqtt_message_callback);
-
-		// mosquitto_connect returns a non zero value on failure
-		if (mosquitto_connect(mqtt_client, host_name.c_str(), mqtt_port, 60)) {
-			printf("warning: could not connect to mqtt_host %s\n", host_name.c_str());
-		}
-
-		if (mosquitto_subscribe(mqtt_client, nullptr, mqtt_control_topic.c_str(), 0)) {
+		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &mqtt_data)) {
 			printf("warning: could not subscribe to mqtt control topic %s\n", mqtt_control_topic.c_str());
 		}
 	}
@@ -327,12 +309,9 @@ int main(int argc, char **argv) {
 						snprintf(msg, msg_len, "0 %6.2f %6.2f", 0.0f, 0.0f);
 					}
 
-					mosquitto_publish(mqtt_client, 0, mqtt_topic.c_str(), strlen(msg), msg, 0, false);
-					int ret = mosquitto_loop(mqtt_client, 0, 1);
-					printf("message sent: %s\n", msg);
-					if (ret) {
-						printf("connection lost, reconnecting...\n");
-						mosquitto_reconnect(mqtt_client);
+					// FIXME: reduce amount of allocations for string
+					if (!mqtt_client->publish(mqtt_topic, std::string(msg))) {
+						printf("warning: could not publish vision data to mqtt");
 					}
 				}
 				break;
@@ -343,12 +322,16 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		if (mqtt_flag) {
+			mqtt_client->update();
+		}
+
 		// this is necessary to poll events for opencv highgui
 		if (display_flag) cv::pollKey();
 	}
 
 	if (mqtt_flag) {
-		mosquitto_destroy(mqtt_client);
+		// FIXME: MqttClient is dropped after this is called
 		mosquitto_lib_cleanup();
 	}
 }
