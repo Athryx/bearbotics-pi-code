@@ -1,6 +1,7 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>
 #include <optional>
 #include <vector>
 #include <functional>
@@ -9,6 +10,27 @@
 struct Target {
 	double distance;
 	double angle;
+};
+
+// wrapper around opencv VideoCapture to quickly open and close with the correct arguments
+class VisionCamera {
+	public:
+		VisionCamera(std::optional<std::string>& filename, int width, int height, int fps);
+		VisionCamera(std::optional<std::string>&& filename, int width, int height, int fps);
+		~VisionCamera();
+
+		bool start();
+		void stop();
+
+		void read_to(cv::Mat& mat);
+
+	private:
+		cv::VideoCapture m_cap;
+		std::optional<std::string> m_filename;
+		int m_cam_width;
+		int m_cam_height;
+		int m_max_fps;
+		bool m_enabled { false };
 };
 
 // TODO: come up with better class name

@@ -2,6 +2,15 @@
 
 #include <functional>
 #include <stdio.h>
+#include <string>
+
+class PanicException {
+		PanicException(std::string message): m_message(message) {}
+	private:
+		std::string m_message;
+};
+
+#define panic(message) throw PanicException(message)
 
 long get_usec();
 

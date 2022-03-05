@@ -4,6 +4,57 @@
 #include "parallel.h"
 #include <math.h>
 
+VisionCamera::VisionCamera(std::optional<std::string>& filename, int width, int height, int fps):
+m_cap(),
+m_cam_width(width),
+m_cam_height(height),
+m_max_fps(fps),
+m_filename(filename) {}
+
+VisionCamera::VisionCamera(std::optional<std::string>&& filename, int width, int height, int fps):
+m_cap(),
+m_cam_width(width),
+m_cam_height(height),
+m_max_fps(fps),
+m_filename(filename) {}
+
+VisionCamera::~VisionCamera() {
+	stop();
+}
+
+bool VisionCamera::start() {
+	if (m_enabled) {
+		return true;
+	}
+
+	if (m_filename.has_value()) {
+		m_cap.open(*m_filename, cv::CAP_V4L2);
+	} else {
+		// cv::CAP_V4L2 is needed because by default it might use gstreamer, and because of a bug in opencv, this causes open to fail
+		// if this is ever run not on linux, this will likely need to be changed
+		m_cap.open(0, cv::CAP_V4L2);
+		m_cap.set(cv::CAP_PROP_FRAME_WIDTH, m_cam_width);
+		m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, m_cam_height);
+		m_cap.set(cv::CAP_PROP_FPS, m_max_fps);
+	}
+
+	m_enabled = m_cap.isOpened();
+	return m_enabled;
+}
+
+void VisionCamera::stop() {
+	if (m_enabled) {
+		m_cap.release();
+		m_enabled = false;
+	}
+}
+
+void VisionCamera::read_to(cv::Mat& mat) {
+	if (m_enabled) {
+		m_cap >> mat;
+	}
+}
+
 Vision::Vision(cv::Mat template_img, int threads, bool display):
 m_threads(threads),
 m_display(display) {
