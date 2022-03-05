@@ -4,10 +4,14 @@
 #include <assert.h>
 
 #include <iostream>
+#include <string>
 
-RemoteViewing::RemoteViewing(const std::string& host, u16 port) {
-	auto pipeline_description = std::string("v4l2src device=\"/dev/video0\" ! video/x-raw,width=320,height=240 ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
+RemoteViewing::RemoteViewing(const std::string& host, u16 port, int width, int height) {
+	// TODO: set these properties without using parse_luanch
+	auto pipeline_description = std::string("v4l2src device=\"/dev/video0\" ! video/x-raw,width=" + std::to_string(width) + ",height=" + std::to_string(height) +
+		" ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
 		" ! rtph264pay config-interval=10 pt=96 ! udpsink host=") + host + std::string(" port=") + std::to_string(port);
+
 	m_pipeline = gst_parse_launch(pipeline_description.c_str(), nullptr);
 	assert(m_pipeline != nullptr);
 

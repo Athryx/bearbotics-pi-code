@@ -6,7 +6,7 @@
 
 class RemoteViewing {
 	public:
-		RemoteViewing(const std::string& host, u16 port);
+		RemoteViewing(const std::string& host, u16 port, int width, int height);
 		~RemoteViewing();
 
 		// returns true on success

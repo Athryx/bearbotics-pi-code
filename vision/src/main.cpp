@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
 
 	const auto rtp_host = program.get("--rtp-host");
 	const auto rtp_port = program.get<int>("--rtp-port");
-	RemoteViewing remote_viewing(rtp_host, rtp_port);
+	RemoteViewing remote_viewing(rtp_host, rtp_port, cam_width, cam_height);
 
 
 	auto file_name = program.get<std::optional<std::string>>("--camera");

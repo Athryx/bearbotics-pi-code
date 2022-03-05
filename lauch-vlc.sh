@@ -1,3 +1,3 @@
 #!/bin/sh
 
-vlc --network-caching 10 vlc-config.sdp
+vlc --network-caching 50 vlc-config.sdp
