@@ -8,7 +8,7 @@ set(OpenCV_DIR /usr/share/OpenCV)
 
 find_package(PkgConfig REQUIRED)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED OpenCV-3.4.5)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 

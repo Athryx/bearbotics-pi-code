@@ -40,9 +40,10 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		});
 
 
+	// for some reason localhost doesn't work here
 	program.add_argument("--rtp-host")
 		.help("host to send the remote viewing data to")
-		.default_value(std::string {"localhost"});
+		.default_value(std::string {"127.0.0.1"});
 
 	program.add_argument("--rtp-port")
 		.help("port to send the remote viewing data to")
@@ -57,7 +58,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		.default_value(std::string {"pi/cv/data"});
 
 	program.add_argument("-c", "--control-topic")
-		.help("mqtt topic to recieve commands from to switch modes between remote viewing and vision")
+		.help("mqtt topic to recieve commands from to switch modes between remote viewing and vision, or to switch teams")
 		.default_value(std::string {"pi/cv/control"});
 
 	program.add_argument("-e", "--error-topic")
@@ -194,8 +195,7 @@ int main(int argc, char **argv) {
 		.team = program.get<Team>("--team"),
 	};
 
-	// XXX: if mqtt_flag is set, this is guaranteed to be a valid pointer
-	std::optional<MqttClient> mqtt_client;
+	std::optional<MqttClient> mqtt_client {};
 	if (mqtt_flag) {
 		mosquitto_lib_init();
 
@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
 			break;
 		case Mode::RemoteViewing:
 			// TODO: handle when this fails
-			remote_viewing.stop();
+			remote_viewing.start();
 			break;
 	}
 
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
 					break;
 				case Mode::RemoteViewing:
 					// TODO: handle when this fails
-					remote_viewing.stop();
+					remote_viewing.start();
 					break;
 			}
 		}
@@ -309,7 +309,7 @@ int main(int argc, char **argv) {
 						snprintf(msg, msg_len, "0 %6.2f %6.2f", 0.0f, 0.0f);
 					}
 
-					// FIXME: reduce amount of allocations for string
+					// TODO: reduce amount of allocations for string
 					if (!mqtt_client->publish(mqtt_topic, std::string(msg))) {
 						printf("warning: could not publish vision data to mqtt");
 					}

@@ -3,6 +3,8 @@
 #include "util.h"
 #include <assert.h>
 
+#include <iostream>
+
 RemoteViewing::RemoteViewing(const std::string& host, u16 port) {
 	auto pipeline_description = std::string("v4l2src device=\"/dev/video0\" ! video/x-raw,width=320,height=240 ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
 		" ! rtph264pay config-interval=10 pt=96 ! udpsink host=") + host + std::string(" port=") + std::to_string(port);
