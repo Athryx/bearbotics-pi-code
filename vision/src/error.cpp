@@ -1,4 +1,5 @@
 #include "error.h"
+#include "logging.h"
 
 Error::Error(ErrorType type):
 m_type(type),
@@ -14,19 +15,13 @@ m_message(message) {}
 
 Error::~Error() {}
 
-// parse from string returned by to_string
-std::optional<Error> Error::from_string(const std::string& string) {
+std::string Error::serialize() const {
 }
 
-std::optional<Error> Error::from_string(std::string&& string) {
+std::optional<Error> Error::deserialize(const std::string& string) {
 }
 
-// returns string to be parsed later
 std::string Error::to_string() const {
-}
-
-// returns string to be displayed to user
-std::string Error::display_string() const {
 }
 
 ErrorType Error::type() const {
@@ -43,4 +38,10 @@ bool Error::is_ok() const {
 
 bool Error::is_err() const {
 	return m_type != ErrorType::Ok;
+}
+
+void Error::ignore() const {
+	if (m_type != ErrorType::Ok) {
+		lg::warn("ignoring error");
+	}
 }

@@ -181,8 +181,7 @@ int main(int argc, char **argv) {
 	const int threads = program.get<int>("--threads");
 
 	if (threads < 1) {
-		printf("error: can't use less than 1 thread");
-		exit(1);
+		lg::critical("error: can't use less than 1 thread");
 	}
 	cv::setNumThreads(threads);
 
@@ -207,8 +206,7 @@ int main(int argc, char **argv) {
 		mqtt_client = MqttClient::create(host_name, mqtt_port);
 
 		if (!mqtt_client.has_value()) {
-			lg::error("could not create MqttClient");
-			exit(1);
+			lg::critical("could not create MqttClient");
 		}
 
 		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &mqtt_data)) {
@@ -228,8 +226,7 @@ int main(int argc, char **argv) {
 	auto template_file = program.get("template");
 	auto template_img = cv::imread(template_file, -1);
 	if (template_img.empty()) {
-		lg::error("template file '%s' empty or missing", template_file.c_str());
-		exit(1);
+		lg::critical("template file '%s' empty or missing", template_file.c_str());
 	}
 	Vision vis(template_img, threads, display_flag);
 

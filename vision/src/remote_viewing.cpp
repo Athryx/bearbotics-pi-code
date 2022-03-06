@@ -29,7 +29,7 @@ RemoteViewing::RemoteViewing(const std::string& host, u16 port, int width, int h
 
 Error RemoteViewing::start() {
 	if (gst_element_set_state(m_pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-		return Error(ErrorType::RemoteViewingStateChangeError, "could not start remote viewing");
+		return Error::library("could not start remote viewing");
 	} else {
 		return Error::ok();
 	}
@@ -37,7 +37,7 @@ Error RemoteViewing::start() {
 
 Error RemoteViewing::stop() {
 	if (gst_element_set_state(m_pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
-		return Error(ErrorType::RemoteViewingStateChangeError, "could not stop remote viewing");
+		return Error::library("could not stop remote viewing");
 	} else {
 		return Error::ok();
 	}
@@ -56,7 +56,7 @@ Error RemoteViewing::update() {
 		switch (msg_type) {
 			case GST_MESSAGE_EOS:
 				lg::warn("end of stream reached");
-				return Error(ErrorType::RemoteViewingEosError, "unexpected eos message recieved from remote viewing pipeline");
+				return Error::resource_unavailable("unexpected end of stream message recieved from remote viewing pipeline");
 			case GST_MESSAGE_ERROR: {
 				gst_message_parse_error(msg, &err, &debug_message);
 
@@ -70,7 +70,7 @@ Error RemoteViewing::update() {
 				g_clear_error(&err);
 				g_free(debug_message);
 
-				return Error(ErrorType::RemoteViewingPipelineError, std::move(error_string));
+				return Error::library(std::move(error_string));
 			}
 			default:
 				lg::warn("unexpected message type recieved");
@@ -83,6 +83,6 @@ Error RemoteViewing::update() {
 
 RemoteViewing::~RemoteViewing() {
 	gst_object_unref(m_bus);
-	stop();
+	stop().ignore();
 	gst_object_unref(m_pipeline);
 }
