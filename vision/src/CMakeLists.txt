@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 project(Vision)
 set(CMAKE_CXX_STANDARD 17)
 
-set(OpenCV_DIR /usr/share/OpenCV)
-# the find gstreamer cmake script is in the project directory
-#set(glib_DIR /usr/share/glib-2.0)
-
 find_package(PkgConfig REQUIRED)
 
 find_package(OpenCV REQUIRED)
