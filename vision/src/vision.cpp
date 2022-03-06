@@ -19,7 +19,7 @@ m_max_fps(fps),
 m_filename(filename) {}
 
 VisionCamera::~VisionCamera() {
-	stop();
+	stop().ignore();
 }
 
 Error VisionCamera::start() {

@@ -8,7 +8,7 @@ void lg::info(const char *fmt, ...) {
 	va_start(args, fmt);
 
 	// prints info in blue
-	printf("\e[0;34minfo:\e[0m ");
+	printf("\e[0;34m[info]\e[0m ");
 	vprintf(fmt, args);
 	printf("\n");
 
@@ -20,7 +20,7 @@ void lg::warn(const char *fmt, ...) {
 	va_start(args, fmt);
 
 	// prints warning in yellow
-	printf("\e[0;33mwarning:\e[0m ");
+	printf("\e[0;33m[warning]\e[0m ");
 	vprintf(fmt, args);
 	printf("\n");
 
@@ -32,7 +32,7 @@ void lg::error(const char *fmt, ...) {
 	va_start(args, fmt);
 
 	// prints error in red
-	printf("\e[0;31merror:\e[0m ");
+	printf("\e[0;31m[error]\e[0m ");
 	vprintf(fmt, args);
 	printf("\n");
 
@@ -44,7 +44,7 @@ void lg::critical(const char *fmt, ...) {
 	va_start(args, fmt);
 
 	// prints critical in bold high intensity red
-	printf("\e[1;91mcritical:\e[0m ");
+	printf("\e[1;91m[critical]\e[0m ");
 	vprintf(fmt, args);
 	printf("\n");
 

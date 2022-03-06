@@ -4,18 +4,21 @@
 #include <optional>
 
 enum class ErrorType: int {
-	Ok,
+	Ok = 0,
 	// an internal error occured
-	Internal,
+	Internal = 1,
 	// a library returned an error and the cause is unknown
-	Library,
+	Library = 2,
 	// an unknown erorr occured
-	Unknown,
+	Unknown = 3,
 	// the requested operation was not valid
-	InvalidOperation,
+	InvalidOperation = 4,
 	// failed to open a certain resource
-	ResourceUnavailable,
+	ResourceUnavailable = 5,
 };
+
+const char* error_type_to_string(ErrorType type);
+std::optional<ErrorType> error_type_from_int(int n);
 
 #define ERROR_CONSTRUCTOR_DEFS(ctor_name, error_type)												\
 static inline Error ctor_name() { return Error(error_type); }										\
@@ -51,6 +54,7 @@ class [[nodiscard]] Error {
 		bool is_err() const;
 
 		void ignore() const;
+		void assert_ok() const;
 
 	private:
 		ErrorType m_type;

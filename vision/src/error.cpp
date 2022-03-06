@@ -1,5 +1,37 @@
 #include "error.h"
 #include "logging.h"
+#include <iterator>
+#include <sstream>
+#include <string>
+
+const char* error_type_to_string(ErrorType type) {
+	switch (type) {
+		case ErrorType::Ok:
+			return "ok";
+		case ErrorType::Internal:
+			return "internal error";
+		case ErrorType::Library:
+			return "error returned by library";
+		case ErrorType::Unknown:
+			return "uknown error";
+		case ErrorType::InvalidOperation:
+			return "invalid operation";
+		case ErrorType::ResourceUnavailable:
+			return "resource unavailable";
+		default:
+			// this should be unreacheble, it just stops the compiler emmiting a warning
+			return "";
+	}
+}
+
+std::optional<ErrorType> error_type_from_int(int n) {
+	// have to update this everytime a new error type is added
+	if (n > 5) {
+		return {};
+	} else {
+		return (ErrorType) n;
+	}
+}
 
 Error::Error(ErrorType type):
 m_type(type),
@@ -16,12 +48,36 @@ m_message(message) {}
 Error::~Error() {}
 
 std::string Error::serialize() const {
+	auto err_str = std::to_string((int) m_type);
+	if (m_message.length() == 0) {
+		return err_str;
+	} else {
+		return err_str + " " + m_message;
+	}
 }
 
 std::optional<Error> Error::deserialize(const std::string& string) {
+	std::istringstream iss(string);
+	int err_num = 0;
+
+	iss >> err_num;
+	if (!iss.good()) {
+		return {};
+	}
+
+	auto err_type = error_type_from_int(err_num);
+	if (!err_type.has_value()) {
+		return {};
+	}
+
+	// TODO: figure out if this captures the space character
+	std::string message(std::istreambuf_iterator<char>(iss), {});
+
+	return Error(*err_type, std::move(message));
 }
 
 std::string Error::to_string() const {
+	return std::string(error_type_to_string(m_type)) + ": " + m_message;
 }
 
 ErrorType Error::type() const {
@@ -41,7 +97,13 @@ bool Error::is_err() const {
 }
 
 void Error::ignore() const {
-	if (m_type != ErrorType::Ok) {
+	if (is_err()) {
 		lg::warn("ignoring error");
+	}
+}
+
+void Error::assert_ok() const {
+	if (is_err()) {
+		lg::critical("assertion failed: error is not ok: %x", to_string().c_str());
 	}
 }
