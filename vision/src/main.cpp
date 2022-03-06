@@ -149,6 +149,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 }
 
 // passed to mqtt message callback
+// FIXME: improve this, it is currently used wrong
 struct MqttData {
 	Mode mode;
 	Team team;
@@ -219,7 +220,7 @@ int main(int argc, char **argv) {
 
 	// helper closure to report errors
 	auto report_error = [&](const Error& error) {
-		lg::warn("%s", error.to_string().c_str());
+		lg::error("%s", error.to_string().c_str());
 		if (mqtt_flag) {
 			mqtt_client->publish(mqtt_error_topic, error.serialize());
 		}
