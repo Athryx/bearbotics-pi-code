@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void warn(const char *fmt, ...) {
+void lg::warn(const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 	
@@ -13,7 +13,7 @@ void warn(const char *fmt, ...) {
 	va_end(args);
 }
 
-void error(const char *fmt, ...) {
+void lg::error(const char *fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 	

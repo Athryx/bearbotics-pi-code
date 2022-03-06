@@ -44,11 +44,11 @@ void RemoteViewing::update() {
 
 		switch (GST_MESSAGE_TYPE(msg)) {
 			case GST_MESSAGE_EOS:
-				warn("end of stream reached");
+				lg::warn("end of stream reached");
 				break;
 			case GST_MESSAGE_ERROR:
 				gst_message_parse_error(msg, &err, &debug_message);
-				error("gstreamer pipeline element %s: %s\ndebugging info: %s",
+				lg::error("gstreamer pipeline element %s: %s\ndebugging info: %s",
 					GST_OBJECT_NAME(msg->src),
 					err->message,
 					debug_message != nullptr ? debug_message : ""
@@ -57,7 +57,7 @@ void RemoteViewing::update() {
 				g_free(debug_message);
 				break;
 			default:
-				warn("unexpected message type recieved");
+				lg::warn("unexpected message type recieved");
 				break;
 		}
 		gst_message_unref(msg);

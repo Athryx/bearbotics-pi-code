@@ -32,10 +32,10 @@ std::optional<MqttClient> MqttClient::create(const std::string& host, int port) 
 void MqttClient::update() {
 	int ret = mosquitto_loop(m_client, 0, 1);
 	if (ret == MOSQ_ERR_CONN_LOST) {
-		warn("connection lost, reconnecting...");
+		lg::warn("connection lost, reconnecting...");
 		mosquitto_reconnect(m_client);
 	} else if (ret != MOSQ_ERR_SUCCESS) {
-		warn("mosquitto_loop returned an error that was not connection lost");
+		lg::warn("mosquitto_loop returned an error that was not connection lost");
 	}
 }
 
@@ -46,7 +46,7 @@ bool MqttClient::publish(const std::string& topic, const std::string &payload) {
 void MqttClient::unsubscribe(const std::string& topic) {
 	m_callbacks.erase(topic);
 	if(mosquitto_unsubscribe(m_client, nullptr, topic.c_str())) {
-		warn("failed to unsubscribe from mqtt topic %s", topic.c_str());
+		lg::warn("failed to unsubscribe from mqtt topic %s", topic.c_str());
 	}
 }
 
@@ -58,7 +58,7 @@ void MqttClient::mqtt_message_callback(mosquitto *mosq, void *data, const mosqui
 		auto callback = client->m_callbacks.at(topic);
 		callback.callback(std::string_view((char *) msg->payload, msg->payloadlen), callback.data);
 	} catch (const std::out_of_range& err) {
-		warn("warning: no callback for topic %s", topic.c_str());
+		lg::warn("warning: no callback for topic %s", topic.c_str());
 		return;
 	}
 }

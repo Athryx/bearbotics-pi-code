@@ -207,12 +207,12 @@ int main(int argc, char **argv) {
 		mqtt_client = MqttClient::create(host_name, mqtt_port);
 
 		if (!mqtt_client.has_value()) {
-			error("could not create MqttClient");
+			lg::error("could not create MqttClient");
 			exit(1);
 		}
 
 		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &mqtt_data)) {
-			warn("could not subscribe to mqtt control topic %s", mqtt_control_topic.c_str());
+			lg::warn("could not subscribe to mqtt control topic %s", mqtt_control_topic.c_str());
 		}
 	}
 
@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 	auto template_file = program.get("template");
 	auto template_img = cv::imread(template_file, -1);
 	if (template_img.empty()) {
-		error("template file '%s' empty or missing", template_file.c_str());
+		lg::error("template file '%s' empty or missing", template_file.c_str());
 		exit(1);
 	}
 	Vision vis(template_img, threads, display_flag);
@@ -287,7 +287,7 @@ int main(int argc, char **argv) {
 				cv::Mat frame;
 				camera.read_to(frame);
 				if (frame.empty()) {
-					warn("empty frame recieved, skipping vision processing");
+					lg::warn("empty frame recieved, skipping vision processing");
 					continue;
 				}
 
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
 
 					// TODO: reduce amount of allocations for string
 					if (!mqtt_client->publish(mqtt_topic, std::string(msg))) {
-						warn("could not publish vision data to mqtt");
+						lg::warn("could not publish vision data to mqtt");
 					}
 				}
 				break;
