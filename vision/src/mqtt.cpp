@@ -10,7 +10,7 @@ MqttClient::~MqttClient() {
 	mosquitto_destroy(m_client);
 }
 
-std::optional<MqttClient> MqttClient::create(const std::string& host, int port) {
+std::optional<MqttClient> MqttClient::create(const std::string& host, int port, const std::string& error_topic) {
 	MqttClient out;
 
 	auto client_name = std::string {"vision_"} + std::to_string(getpid());
@@ -26,6 +26,7 @@ std::optional<MqttClient> MqttClient::create(const std::string& host, int port) 
 	}
 
 	out.m_client = client;
+	out.m_error_topic = error_topic;
 	return out;
 }
 
@@ -41,6 +42,10 @@ void MqttClient::update() {
 
 bool MqttClient::publish(const std::string& topic, const std::string &payload) {
 	return mosquitto_publish(m_client, nullptr, topic.c_str(), payload.length(), payload.c_str(), 0, false) == MOSQ_ERR_SUCCESS;
+}
+
+void MqttClient::send_error(const Error &error) {
+	publish(m_error_topic, error.serialize());
 }
 
 void MqttClient::unsubscribe(const std::string& topic) {

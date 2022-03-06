@@ -190,6 +190,7 @@ int main(int argc, char **argv) {
 	const bool mqtt_flag = program.is_used("--mqtt");
 	const auto mqtt_topic = program.get("--topic");
 	const auto mqtt_control_topic = program.get("--control-topic");
+	const auto mqtt_error_topic = program.get("--error-topic");
 
 	auto mqtt_data = MqttData {
 		.mode = program.get<Mode>("--remote-viewing"),
@@ -203,7 +204,7 @@ int main(int argc, char **argv) {
 		auto host_name = program.get("--mqtt");
 		const int mqtt_port = program.get<int>("--port");
 
-		mqtt_client = MqttClient::create(host_name, mqtt_port);
+		mqtt_client = MqttClient::create(host_name, mqtt_port, mqtt_error_topic);
 
 		if (!mqtt_client.has_value()) {
 			lg::critical("could not create MqttClient");

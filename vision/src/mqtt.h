@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "error.h"
 
 struct CallbackData {
 	// callback data must be void pointer because we store many different types of callbacks in the callbacks hashmap
@@ -12,14 +13,17 @@ struct CallbackData {
 	void *data;
 };
 
+// TODO: error propagation
 class MqttClient {
 	public:
-		static std::optional<MqttClient> create(const std::string& host, int port);
+		static std::optional<MqttClient> create(const std::string& host, int port, const std::string& error_topic);
 		~MqttClient();
 
 		void update();
 
 		bool publish(const std::string& topic, const std::string& payload);
+
+		void send_error(const Error& error);
 
 		// calback takes in a string_view of the message and a pointer to the passed in object
 		template<typename T>
@@ -52,4 +56,5 @@ class MqttClient {
 
 		mosquitto *m_client;
 		std::unordered_map<std::string, CallbackData> m_callbacks;
+		std::string m_error_topic;
 };
