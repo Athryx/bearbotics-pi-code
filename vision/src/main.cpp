@@ -8,6 +8,8 @@
 #include "error.h"
 #include <gst/gst.h>
 #include <opencv2/opencv.hpp>
+#include <sstream>
+#include <stdexcept>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -46,6 +48,24 @@ enum class Team {
 // TODO: allow setting what to log
 argparse::ArgumentParser parse_args(int argc, char **argv) {
 	argparse::ArgumentParser program("vision", "0.1.0");
+
+	program.add_argument("-l", "--log-level")
+		.help("how much to log: 0: nothing, 1: ciritical, 2: errors, 3: warnings, 4: info")
+		.default_value(4)
+		.action([] (const std::string& str) {
+			int level;
+			std::istringstream iss(str);
+
+			iss >> level;
+			if (!iss.good()) {
+				throw std::runtime_error("must pass number to --log-level");
+			}
+
+			if (level < 0 || level > 4) {
+				throw std::runtime_error("invalid logging level");
+			}
+			return level;
+		});
 
 	program.add_argument("-m", "--mqtt")
 		.help("publish distance and angle to mqtt broker")
@@ -224,6 +244,7 @@ void mqtt_control_callback(std::string_view msg, AppState *data) {
 int main(int argc, char **argv) {
 	auto program = parse_args(argc, argv);
 
+	lg::init(program.get<int>("--log-level"));
 	gst_init(&argc, &argv);
 
 	const bool display_flag = program.get<bool>("--display");

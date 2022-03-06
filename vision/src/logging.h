@@ -1,6 +1,8 @@
 #pragma once
 
 namespace lg {
+void init(int level);
+
 // prints out info, with a newline at the end
 void info(const char *fmt, ...);
 
