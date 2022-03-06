@@ -34,7 +34,6 @@ class VisionCamera {
 		bool m_enabled { false };
 };
 
-// TODO: come up with better class name
 class Vision {
 	public:
 		Vision(cv::Mat template_img, int threads, bool display);

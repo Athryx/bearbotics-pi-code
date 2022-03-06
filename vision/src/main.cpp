@@ -36,12 +36,14 @@ const char* mode_to_string(Mode mode) {
 	return "";
 }
 
+// TODO: acutally do something with set color
 enum class Team {
 	Red,
 	Blue,
 };
 
 // TODO: modify argparse to allow overiding default represented value string
+// TODO: allow setting what to log
 argparse::ArgumentParser parse_args(int argc, char **argv) {
 	argparse::ArgumentParser program("vision", "0.1.0");
 
@@ -265,20 +267,23 @@ int main(int argc, char **argv) {
 	auto report_error = [&](const Error& error) {
 		lg::error("%s", error.to_string().c_str());
 		if (mqtt_flag) {
-			auto result = mqtt_client->publish(mqtt_error_topic, ";" + error.serialize());
+			std::string msg = ";" + error.serialize();
+			auto result = mqtt_client->publish(mqtt_error_topic, msg);
 			if (result.is_err()) {
-				lg::error("error sending error over mqtt: %s", result.to_string().c_str());
+				lg::error("error sending error message over mqtt: %s", msg.c_str());
 			}
 		}
 	};
 
+	// reports a mode change and an error
 	auto report_mode_change = [&](Mode mode, const Error& reason) {
 		auto mode_str = mode_to_string(mode);
 		lg::error("changing to mode %s because %s", mode_str, reason.to_string().c_str());
 		if (mqtt_flag) {
-			auto result = mqtt_client->publish(mqtt_error_topic, std::string(mode_str) + ";" + reason.serialize());
+			std::string msg = std::string(mode_str) + ";" + reason.serialize();
+			auto result = mqtt_client->publish(mqtt_error_topic, msg);
 			if (result.is_err()) {
-				lg::error("error sending error over mqtt: %s", result.to_string().c_str());
+				lg::error("error sending error message over mqtt: %s", msg.c_str());
 			}
 		}
 	};

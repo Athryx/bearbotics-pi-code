@@ -7,7 +7,7 @@
 
 class RemoteViewing {
 	public:
-		// TODO: error propagation
+		// TODO: error propagation with constructor
 		RemoteViewing(const std::string& host, u16 port, int width, int height);
 		~RemoteViewing();
 

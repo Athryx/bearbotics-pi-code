@@ -13,7 +13,6 @@ struct CallbackData {
 	void *data;
 };
 
-// TODO: error propagation
 class MqttClient {
 	public:
 		static std::optional<MqttClient> create(const std::string& host, int port);
