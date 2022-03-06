@@ -23,6 +23,19 @@ enum class Mode {
 	None,
 };
 
+const char* mode_to_string(Mode mode) {
+	switch(mode) {
+		case Mode::Vision:
+			return "vision";
+		case Mode::RemoteViewing:
+			return "remote_viewing";
+		case Mode::None:
+			return "none";
+	}
+	// stop compiler warning
+	return "";
+}
+
 enum class Team {
 	Red,
 	Blue,
@@ -89,7 +102,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		});
 
 
-	// TODO: make these settings apply to remote viewing or add seperate settings fro remote viewing
+	// TODO: make fps setting apply to remote viewing or add seperate settings for remote viewing
 	program.add_argument("-f", "--fps")
 		.help("maximum frames per second")
 		.default_value(120)
@@ -148,8 +161,6 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 	return program;
 }
 
-// passed to mqtt message callback
-// FIXME: improve this, it is currently used wrong
 class AppState {
 	public:
 		// sets old mode to none to force mode init to be initially run
@@ -191,12 +202,20 @@ class AppState {
 		std::optional<Mode> m_old_mode;
 };
 
-// TODO: be able to set team
 void mqtt_control_callback(std::string_view msg, AppState *data) {
-	if (msg == "vision") {
+	// this is kind of jank command processor, needs to be improved for more complex commands if they are ever added
+	if (msg == "mode vision") {
 		data->set_mode(Mode::Vision);
-	} else if (msg == "remote-viewing") {
+	} else if (msg == "mode remote_viewing") {
 		data->set_mode(Mode::RemoteViewing);
+	} else if (msg == "mode none") {
+		data->set_mode(Mode::None);
+	} else if (msg == "team red") {
+		data->set_team(Team::Red);
+	} else if (msg == "team blue") {
+		data->set_team(Team::Blue);
+	} else {
+		lg::warn("recieved invalid control message");
 	}
 }
 
@@ -217,7 +236,6 @@ int main(int argc, char **argv) {
 	cv::setNumThreads(threads);
 
 
-	// TODO: maybe it is ugly to have a boolean and mqtt_client, maybe use an optional?
 	const bool mqtt_flag = program.is_used("--mqtt");
 	const auto mqtt_topic = program.get("--topic");
 	const auto mqtt_control_topic = program.get("--control-topic");
@@ -247,7 +265,18 @@ int main(int argc, char **argv) {
 	auto report_error = [&](const Error& error) {
 		lg::error("%s", error.to_string().c_str());
 		if (mqtt_flag) {
-			auto result = mqtt_client->publish(mqtt_error_topic, error.serialize());
+			auto result = mqtt_client->publish(mqtt_error_topic, ";" + error.serialize());
+			if (result.is_err()) {
+				lg::error("error sending error over mqtt: %s", result.to_string().c_str());
+			}
+		}
+	};
+
+	auto report_mode_change = [&](Mode mode, const Error& reason) {
+		auto mode_str = mode_to_string(mode);
+		lg::error("changing to mode %s because %s", mode_str, reason.to_string().c_str());
+		if (mqtt_flag) {
+			auto result = mqtt_client->publish(mqtt_error_topic, std::string(mode_str) + ";" + reason.serialize());
 			if (result.is_err()) {
 				lg::error("error sending error over mqtt: %s", result.to_string().c_str());
 			}
@@ -308,7 +337,7 @@ int main(int argc, char **argv) {
 					auto result = camera.start();
 					if (result.is_err()) {
 						app_state.set_mode(Mode::None);
-						report_error(result);
+						report_mode_change(Mode::None, result);
 					}
 					break;
 				}
@@ -316,7 +345,7 @@ int main(int argc, char **argv) {
 					auto result = remote_viewing.start();
 					if (result.is_err()) {
 						app_state.set_mode(Mode::None);
-						report_error(result);
+						report_mode_change(Mode::None, result);
 					}
 					break;
 				}
@@ -340,7 +369,7 @@ int main(int argc, char **argv) {
 					} else {
 						// some other error has occured, don't do vision anymore
 						app_state.set_mode(Mode::None);
-						report_error(result);
+						report_mode_change(Mode::None, result);
 					}
 				}
 
@@ -376,7 +405,7 @@ int main(int argc, char **argv) {
 				auto result = remote_viewing.update();
 				if (result.is_err()) {
 					app_state.set_mode(Mode::None);
-					report_error(result);
+					report_mode_change(Mode::None, result);
 				}
 				break;
 			}
@@ -396,7 +425,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (mqtt_flag) {
-		// FIXME: MqttClient is dropped after this is called
+		// FIXME: MqttClient is dropped after this is called which might cuase problems
 		mosquitto_lib_cleanup();
 	}
 }
