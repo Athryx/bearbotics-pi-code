@@ -25,5 +25,5 @@ link_directories(
 	${GSTREAMER_LIBRARY_DIRS}
 )
 
-add_executable(Vision main.cpp util.cpp vision.cpp parallel.cpp remote_viewing.cpp mqtt.cpp)
+add_executable(Vision main.cpp util.cpp vision.cpp parallel.cpp remote_viewing.cpp mqtt.cpp logging.cpp)
 target_link_libraries(Vision mosquitto ${OpenCV_LIBS} ${GSTREAMER_LIBRARIES} ${GLIV_LIBRARIES})

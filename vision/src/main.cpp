@@ -4,6 +4,7 @@
 #include "vision.h"
 #include "remote_viewing.h"
 #include "util.h"
+#include "logging.h"
 #include <gst/gst.h>
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
@@ -25,6 +26,7 @@ enum class Team {
 	Blue
 };
 
+// TODO: modify argparse to allow overiding default represented value string
 argparse::ArgumentParser parse_args(int argc, char **argv) {
 	argparse::ArgumentParser program("vision", "0.1.0");
 
@@ -205,12 +207,12 @@ int main(int argc, char **argv) {
 		mqtt_client = MqttClient::create(host_name, mqtt_port);
 
 		if (!mqtt_client.has_value()) {
-			printf("error: could not create MqttClient");
+			error("could not create MqttClient");
 			exit(1);
 		}
 
 		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &mqtt_data)) {
-			printf("warning: could not subscribe to mqtt control topic %s\n", mqtt_control_topic.c_str());
+			warn("could not subscribe to mqtt control topic %s", mqtt_control_topic.c_str());
 		}
 	}
 
@@ -226,7 +228,7 @@ int main(int argc, char **argv) {
 	auto template_file = program.get("template");
 	auto template_img = cv::imread(template_file, -1);
 	if (template_img.empty()) {
-		printf("template file '%s' empty or missing\n", template_file.c_str());
+		error("template file '%s' empty or missing", template_file.c_str());
 		exit(1);
 	}
 	Vision vis(template_img, threads, display_flag);
@@ -285,7 +287,7 @@ int main(int argc, char **argv) {
 				cv::Mat frame;
 				camera.read_to(frame);
 				if (frame.empty()) {
-					printf("warning: empty frame recieved, skipping vision processing\n");
+					warn("empty frame recieved, skipping vision processing");
 					continue;
 				}
 
@@ -311,13 +313,13 @@ int main(int argc, char **argv) {
 
 					// TODO: reduce amount of allocations for string
 					if (!mqtt_client->publish(mqtt_topic, std::string(msg))) {
-						printf("warning: could not publish vision data to mqtt");
+						warn("could not publish vision data to mqtt");
 					}
 				}
 				break;
 			}
 			case Mode::RemoteViewing: {
-				// TODO: handle remote viewing errors here
+				remote_viewing.update();
 				break;
 			}
 		}
