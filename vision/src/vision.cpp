@@ -58,8 +58,11 @@ Error VisionCamera::stop() {
 
 Error VisionCamera::read_to(cv::Mat& mat) {
 	if (m_enabled) {
-		m_cap >> mat;
-		return Error::ok();
+		if (m_cap.read(mat)) {
+			return Error::ok();
+		} else {
+			return Error::resource_unavailable("could not read next fram from camera");
+		}
 	} else {
 		return Error::invalid_operation("can not read from vision camera if it is stopped");
 	}

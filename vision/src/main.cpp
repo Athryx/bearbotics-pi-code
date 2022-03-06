@@ -5,6 +5,7 @@
 #include "remote_viewing.h"
 #include "util.h"
 #include "logging.h"
+#include "error.h"
 #include <gst/gst.h>
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
@@ -18,12 +19,13 @@
 
 enum class Mode {
 	Vision,
-	RemoteViewing
+	RemoteViewing,
+	None,
 };
 
 enum class Team {
 	Red,
-	Blue
+	Blue,
 };
 
 // TODO: modify argparse to allow overiding default represented value string
@@ -204,7 +206,7 @@ int main(int argc, char **argv) {
 		auto host_name = program.get("--mqtt");
 		const int mqtt_port = program.get<int>("--port");
 
-		mqtt_client = MqttClient::create(host_name, mqtt_port, mqtt_error_topic);
+		mqtt_client = MqttClient::create(host_name, mqtt_port);
 
 		if (!mqtt_client.has_value()) {
 			lg::critical("could not create MqttClient");
@@ -214,6 +216,14 @@ int main(int argc, char **argv) {
 			lg::warn("could not subscribe to mqtt control topic %s", mqtt_control_topic.c_str());
 		}
 	}
+
+	// helper closure to report errors
+	auto report_error = [&](const Error& error) {
+		lg::warn("%s", error.to_string().c_str());
+		if (mqtt_flag) {
+			mqtt_client->publish(mqtt_error_topic, error.serialize());
+		}
+	};
 
 
 	const auto rtp_host = program.get("--rtp-host");
@@ -241,13 +251,25 @@ int main(int argc, char **argv) {
 
 	// enable device for initial mode
 	switch (mqtt_data.mode) {
-		case Mode::Vision:
+		case Mode::Vision: {
 			// TODO: handle when this fails
-			camera.start();
+			auto result = camera.start();
+			if (result.is_err()) {
+				mqtt_data.mode = Mode::None;
+				report_error(result);
+			}
 			break;
-		case Mode::RemoteViewing:
+		}
+		case Mode::RemoteViewing: {
 			// TODO: handle when this fails
-			remote_viewing.start();
+			auto result = remote_viewing.start();
+			if (result.is_err()) {
+				mqtt_data.mode = Mode::None;
+				report_error(result);
+			}
+			break;
+		}
+		case Mode::None:
 			break;
 	}
 
@@ -258,24 +280,44 @@ int main(int argc, char **argv) {
 			Mode old_mode = *mqtt_data.old_mode;
 			mqtt_data.old_mode = {};
 
+			// if there is an error when stopping cameras, it is not as important, so just emit a warning, don't tell rio or change state
 			switch (old_mode) {
-				case Mode::Vision:
-					camera.stop();
+				case Mode::Vision: {
+					auto result = camera.stop();
+					if (result.is_err()) {
+						lg::warn("%s", result.to_string().c_str());
+					}
 					break;
-				case Mode::RemoteViewing:
-					// TODO: handle when this fails
-					remote_viewing.stop();
+				}
+				case Mode::RemoteViewing: {
+					auto result = remote_viewing.stop();
+					if (result.is_err()) {
+						lg::warn("%s", result.to_string().c_str());
+					}
+					break;
+				}
+				case Mode::None:
 					break;
 			}
 
 			switch (mqtt_data.mode) {
-				case Mode::Vision:
-					// TODO: handle when this fails
-					camera.start();
+				case Mode::Vision: {
+					auto result = camera.start();
+					if (result.is_err()) {
+						mqtt_data.mode = Mode::None;
+						report_error(result);
+					}
 					break;
-				case Mode::RemoteViewing:
-					// TODO: handle when this fails
-					remote_viewing.start();
+				}
+				case Mode::RemoteViewing: {
+					auto result = remote_viewing.start();
+					if (result.is_err()) {
+						mqtt_data.mode = Mode::None;
+						report_error(result);
+					}
+					break;
+				}
+				case Mode::None:
 					break;
 			}
 		}
@@ -283,10 +325,16 @@ int main(int argc, char **argv) {
 		switch (mqtt_data.mode) {
 			case Mode::Vision: {
 				cv::Mat frame;
-				camera.read_to(frame);
-				if (frame.empty()) {
-					lg::warn("empty frame recieved, skipping vision processing");
-					continue;
+				auto result = camera.read_to(frame);
+				if (result.is_err()) {
+					if (result.is(ErrorType::ResourceUnavailable)) {
+						lg::warn("could not read frame from camera, skipping vision processing");
+						continue;
+					} else {
+						// some other error has occured, don't do vision anymore
+						mqtt_data.mode = Mode::None;
+						report_error(result);
+					}
 				}
 
 				long elapsed_time;
@@ -317,9 +365,15 @@ int main(int argc, char **argv) {
 				break;
 			}
 			case Mode::RemoteViewing: {
-				remote_viewing.update();
+				auto result = remote_viewing.update();
+				if (result.is_err()) {
+					mqtt_data.mode = Mode::None;
+					report_error(result);
+				}
 				break;
 			}
+			case Mode::None:
+				break;
 		}
 
 		if (mqtt_flag) {

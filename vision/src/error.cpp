@@ -96,6 +96,10 @@ bool Error::is_err() const {
 	return m_type != ErrorType::Ok;
 }
 
+bool Error::is(ErrorType type) const {
+	return m_type == type;
+}
+
 void Error::ignore() const {
 	if (is_err()) {
 		lg::warn("ignoring error");

@@ -52,6 +52,7 @@ class [[nodiscard]] Error {
 
 		bool is_ok() const;
 		bool is_err() const;
+		bool is(ErrorType type) const;
 
 		void ignore() const;
 		void assert_ok() const;
