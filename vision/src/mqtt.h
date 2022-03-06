@@ -19,9 +19,9 @@ class MqttClient {
 		static std::optional<MqttClient> create(const std::string& host, int port);
 		~MqttClient();
 
-		void update();
+		Error update();
 
-		bool publish(const std::string& topic, const std::string& payload);
+		Error publish(const std::string& topic, const std::string& payload);
 
 		// calback takes in a string_view of the message and a pointer to the passed in object
 		template<typename T>

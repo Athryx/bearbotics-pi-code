@@ -16,17 +16,22 @@ const char* error_type_to_string(ErrorType type) {
 			return "uknown error";
 		case ErrorType::InvalidOperation:
 			return "invalid operation";
+		case ErrorType::InvalidArgs:
+			return "invalid arguments";
 		case ErrorType::ResourceUnavailable:
 			return "resource unavailable";
-		default:
-			// this should be unreacheble, it just stops the compiler emmiting a warning
-			return "";
+		case ErrorType::Network:
+			return "netwrok error";
+		case ErrorType::OutOfMem:
+			return "out of memory";
 	}
+	// this should be unreacheble, it just stops the compiler emmiting a warning
+	return "";
 }
 
 std::optional<ErrorType> error_type_from_int(int n) {
 	// have to update this everytime a new error type is added
-	if (n > 5) {
+	if (n > 8) {
 		return {};
 	} else {
 		return (ErrorType) n;

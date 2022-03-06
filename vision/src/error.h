@@ -13,8 +13,14 @@ enum class ErrorType: int {
 	Unknown = 3,
 	// the requested operation was not valid
 	InvalidOperation = 4,
+	// invalid argumens passed to function
+	InvalidArgs = 5,
 	// failed to open a certain resource
-	ResourceUnavailable = 5,
+	ResourceUnavailable = 6,
+	// error with the network connection
+	Network = 7,
+	// out of memory
+	OutOfMem = 8,
 };
 
 const char* error_type_to_string(ErrorType type);
@@ -39,7 +45,10 @@ class [[nodiscard]] Error {
 		ERROR_CONSTRUCTOR_DEFS(library, ErrorType::Library)
 		ERROR_CONSTRUCTOR_DEFS(unknown, ErrorType::Unknown)
 		ERROR_CONSTRUCTOR_DEFS(invalid_operation, ErrorType::InvalidOperation)
+		ERROR_CONSTRUCTOR_DEFS(invalid_args, ErrorType::InvalidArgs)
 		ERROR_CONSTRUCTOR_DEFS(resource_unavailable, ErrorType::ResourceUnavailable)
+		ERROR_CONSTRUCTOR_DEFS(network, ErrorType::Network)
+		ERROR_CONSTRUCTOR_DEFS(memory, ErrorType::OutOfMem)
 
 		// string serialization used to send errors across mqtt
 		std::string serialize() const;

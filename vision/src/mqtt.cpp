@@ -29,24 +29,70 @@ std::optional<MqttClient> MqttClient::create(const std::string& host, int port) 
 	return out;
 }
 
-void MqttClient::update() {
+Error MqttClient::update() {
 	int ret = mosquitto_loop(m_client, 0, 1);
-	if (ret == MOSQ_ERR_CONN_LOST) {
-		lg::warn("connection lost, reconnecting...");
-		mosquitto_reconnect(m_client);
-	} else if (ret != MOSQ_ERR_SUCCESS) {
-		lg::warn("mosquitto_loop returned an error that was not connection lost");
+	switch (ret) {
+		case MOSQ_ERR_SUCCESS:
+			return Error::ok();
+		case MOSQ_ERR_INVAL:
+			return Error::library("invalid paramaters passed to mosquitto_publish");
+		case MOSQ_ERR_NOMEM:
+			return Error::memory("mosquitto_loop");
+		case MOSQ_ERR_NO_CONN:
+			return Error::network("cannot execute mosquitto_loop when not connected to broker");
+		case MOSQ_ERR_CONN_LOST: {
+			lg::warn("connection lost, reconnecting...");
+			// TODO: maybe use a non blocking version to avoid stopping remote viewing which does not require mqtt
+			// not a big deal since currently the broker also runs on the pi
+			switch (mosquitto_reconnect(m_client)) {
+				case MOSQ_ERR_SUCCESS:
+					return Error::ok();
+				case MOSQ_ERR_NOMEM:
+					return Error::memory("mosquitto_reconnect");
+				case MOSQ_ERR_ERRNO:
+					return Error::library("mosquitto library encountered bad errno");
+				default:
+					return Error::unknown("mosquitto_reconnect");
+			}
+		}
+		case MOSQ_ERR_PROTOCOL:
+			return Error::library("mqtt protocol mismatch");
+		case MOSQ_ERR_ERRNO:
+			return Error::library("mosquitto library encountered bad errno");
+		default:
+			return Error::unknown("mosquitto_loop");
 	}
 }
 
-bool MqttClient::publish(const std::string& topic, const std::string &payload) {
-	return mosquitto_publish(m_client, nullptr, topic.c_str(), payload.length(), payload.c_str(), 0, false) == MOSQ_ERR_SUCCESS;
+Error MqttClient::publish(const std::string& topic, const std::string &payload) {
+	switch(mosquitto_publish(m_client, nullptr, topic.c_str(), payload.length(), payload.c_str(), 0, false)) {
+		case MOSQ_ERR_SUCCESS:
+			return Error::ok();
+		case MOSQ_ERR_INVAL:
+		case MOSQ_ERR_QOS_NOT_SUPPORTED:
+			return Error::library("invalid paramaters passed to mosquitto_publish");
+		case MOSQ_ERR_NOMEM:
+			return Error::memory("mosquitto_publish");
+		case MOSQ_ERR_NO_CONN:
+			return Error::network("cannot send publish message to broker");
+		case MOSQ_ERR_PROTOCOL:
+			return Error::library("mqtt protocol mismatch");
+		case MOSQ_ERR_PAYLOAD_SIZE:
+		case MOSQ_ERR_OVERSIZE_PACKET:
+			return Error::invalid_args("payload is too large");
+		case MOSQ_ERR_MALFORMED_UTF8:
+			return Error::invalid_args("payload is not valid utf-8");
+		default:
+			return Error::unknown("mosquitto_publish");
+	}
 }
 
 void MqttClient::unsubscribe(const std::string& topic) {
 	m_callbacks.erase(topic);
 	if(mosquitto_unsubscribe(m_client, nullptr, topic.c_str())) {
-		lg::warn("failed to unsubscribe from mqtt topic %s", topic.c_str());
+		// don't return an error, since this isn't an error that needs to be handled
+		// MqttClient will handle it by not calling the callback anymore
+		lg::warn("failed to tell mqtt broker to unsubscribe from mqtt topic %s", topic.c_str());
 	}
 }
 

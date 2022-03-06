@@ -222,7 +222,10 @@ int main(int argc, char **argv) {
 	auto report_error = [&](const Error& error) {
 		lg::error("%s", error.to_string().c_str());
 		if (mqtt_flag) {
-			mqtt_client->publish(mqtt_error_topic, error.serialize());
+			auto result = mqtt_client->publish(mqtt_error_topic, error.serialize());
+			if (result.is_err()) {
+				lg::error("error sending error over mqtt: %s", result.to_string().c_str());
+			}
 		}
 	};
 
@@ -359,8 +362,9 @@ int main(int argc, char **argv) {
 					}
 
 					// TODO: reduce amount of allocations for string
-					if (!mqtt_client->publish(mqtt_topic, std::string(msg))) {
-						lg::warn("could not publish vision data to mqtt");
+					auto result = mqtt_client->publish(mqtt_topic, std::string(msg));
+					if (result.is_err()) {
+						lg::error("could not publish vision data to mqtt: %s", result.to_string().c_str());
 					}
 				}
 				break;
@@ -378,7 +382,10 @@ int main(int argc, char **argv) {
 		}
 
 		if (mqtt_flag) {
-			mqtt_client->update();
+			auto result = mqtt_client->update();
+			if (result.is_err()) {
+				lg::error("error updating mqtt client: %s", result.to_string().c_str());
+			}
 		}
 
 		// this is necessary to poll events for opencv highgui

@@ -74,7 +74,7 @@ Error RemoteViewing::update() {
 			}
 			default:
 				lg::warn("unexpected message type recieved");
-				return Error::internal("unexpected message type recieved from remote viewing gstreamer pipeline");
+				return Error::unknown("unexpected message type recieved from remote viewing gstreamer pipeline");
 		}
 	}
 
