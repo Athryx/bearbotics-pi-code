@@ -22,9 +22,9 @@ VisionCamera::~VisionCamera() {
 	stop();
 }
 
-bool VisionCamera::start() {
+Error VisionCamera::start() {
 	if (m_enabled) {
-		return true;
+		return Error::invalid_operation("vision camera is already started");
 	}
 
 	if (m_filename.has_value()) {
@@ -39,19 +39,29 @@ bool VisionCamera::start() {
 	}
 
 	m_enabled = m_cap.isOpened();
-	return m_enabled;
-}
-
-void VisionCamera::stop() {
-	if (m_enabled) {
-		m_cap.release();
-		m_enabled = false;
+	if (!m_enabled) {
+		return Error::resource_unavailable("could not start vision camera");
+	} else {
+		return Error::ok();
 	}
 }
 
-void VisionCamera::read_to(cv::Mat& mat) {
+Error VisionCamera::stop() {
+	if (m_enabled) {
+		m_cap.release();
+		m_enabled = false;
+		return Error::ok();
+	} else {
+		return Error::invalid_operation("vision camera already stopped");
+	}
+}
+
+Error VisionCamera::read_to(cv::Mat& mat) {
 	if (m_enabled) {
 		m_cap >> mat;
+		return Error::ok();
+	} else {
+		return Error::invalid_operation("can not read from vision camera if it is stopped");
 	}
 }
 

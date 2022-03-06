@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 #include <functional>
+#include "error.h"
 
 // represents a detected target
 struct Target {
@@ -19,10 +20,10 @@ class VisionCamera {
 		VisionCamera(std::optional<std::string>&& filename, int width, int height, int fps);
 		~VisionCamera();
 
-		bool start();
-		void stop();
+		Error start();
+		Error stop();
 
-		void read_to(cv::Mat& mat);
+		Error read_to(cv::Mat& mat);
 
 	private:
 		cv::VideoCapture m_cap;
