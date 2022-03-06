@@ -150,25 +150,53 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 
 // passed to mqtt message callback
 // FIXME: improve this, it is currently used wrong
-struct MqttData {
-	Mode mode;
-	Team team;
-	// this will be none under normal circumstances, and set to Some(old mode) after mode change
-	std::optional<Mode> old_mode {};
+class AppState {
+	public:
+		// sets old mode to none to force mode init to be initially run
+		AppState(Mode mode, Team team):
+		m_mode(mode),
+		m_team(team),
+		m_old_mode(Mode::None) {}
+
+		Mode mode() const { return m_mode; }
+		Team team() const { return m_team; }
+
+		void set_mode(Mode new_mode) {
+			if (new_mode != m_mode) {
+				m_old_mode = m_mode;
+				m_mode = new_mode;
+			}
+		}
+
+		std::optional<Mode> old_mode() const {
+			return m_old_mode;
+		}
+
+		bool has_mode_changed() const {
+			return m_old_mode.has_value();
+		}
+
+		void mod_change_complete() {
+			m_old_mode = {};
+		}
+
+		void set_team(Team team) {
+			m_team = team;
+		}
+
+	private:
+		Mode m_mode;
+		Team m_team;
+		// this will be none under normal circumstances, and set to Some(old mode) after mode change
+		std::optional<Mode> m_old_mode;
 };
 
 // TODO: be able to set team
-void mqtt_control_callback(std::string_view msg, MqttData *data) {
-	Mode new_mode;
+void mqtt_control_callback(std::string_view msg, AppState *data) {
 	if (msg == "vision") {
-		new_mode = Mode::Vision;
+		data->set_mode(Mode::Vision);
 	} else if (msg == "remote-viewing") {
-		new_mode = Mode::RemoteViewing;
-	}
-
-	if (new_mode != data->mode) {
-		data->old_mode = data->mode;
-		data->mode = new_mode;
+		data->set_mode(Mode::RemoteViewing);
 	}
 }
 
@@ -195,10 +223,7 @@ int main(int argc, char **argv) {
 	const auto mqtt_control_topic = program.get("--control-topic");
 	const auto mqtt_error_topic = program.get("--error-topic");
 
-	auto mqtt_data = MqttData {
-		.mode = program.get<Mode>("--remote-viewing"),
-		.team = program.get<Team>("--team"),
-	};
+	AppState app_state(program.get<Mode>("--remote-viewing"), program.get<Team>("--team"));
 
 	std::optional<MqttClient> mqtt_client {};
 	if (mqtt_flag) {
@@ -213,7 +238,7 @@ int main(int argc, char **argv) {
 			lg::critical("could not create MqttClient");
 		}
 
-		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &mqtt_data)) {
+		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &app_state)) {
 			lg::warn("could not subscribe to mqtt control topic %s", mqtt_control_topic.c_str());
 		}
 	}
@@ -253,39 +278,13 @@ int main(int argc, char **argv) {
 	long total_time = 0;
 	long frames = 0;
 
-	// enable device for initial mode
-	switch (mqtt_data.mode) {
-		case Mode::Vision: {
-			// TODO: handle when this fails
-			auto result = camera.start();
-			if (result.is_err()) {
-				mqtt_data.mode = Mode::None;
-				report_error(result);
-			}
-			break;
-		}
-		case Mode::RemoteViewing: {
-			// TODO: handle when this fails
-			auto result = remote_viewing.start();
-			if (result.is_err()) {
-				mqtt_data.mode = Mode::None;
-				report_error(result);
-			}
-			break;
-		}
-		case Mode::None:
-			break;
-	}
-
 	// TODO: don't constantly loop
 	for(;;) {
 		// check if mode has changed
-		if (mqtt_data.old_mode.has_value()) {
-			Mode old_mode = *mqtt_data.old_mode;
-			mqtt_data.old_mode = {};
+		if (app_state.has_mode_changed()) {
 
 			// if there is an error when stopping cameras, it is not as important, so just emit a warning, don't tell rio or change state
-			switch (old_mode) {
+			switch (*app_state.old_mode()) {
 				case Mode::Vision: {
 					auto result = camera.stop();
 					if (result.is_err()) {
@@ -304,11 +303,11 @@ int main(int argc, char **argv) {
 					break;
 			}
 
-			switch (mqtt_data.mode) {
+			switch (app_state.mode()) {
 				case Mode::Vision: {
 					auto result = camera.start();
 					if (result.is_err()) {
-						mqtt_data.mode = Mode::None;
+						app_state.set_mode(Mode::None);
 						report_error(result);
 					}
 					break;
@@ -316,7 +315,7 @@ int main(int argc, char **argv) {
 				case Mode::RemoteViewing: {
 					auto result = remote_viewing.start();
 					if (result.is_err()) {
-						mqtt_data.mode = Mode::None;
+						app_state.set_mode(Mode::None);
 						report_error(result);
 					}
 					break;
@@ -324,9 +323,13 @@ int main(int argc, char **argv) {
 				case Mode::None:
 					break;
 			}
+
+			// this will clear the changing mode state that may occur when switching mode to none if the mode init fails
+			// this will stop the app from trying to close the cameras
+			app_state.mod_change_complete();
 		}
 
-		switch (mqtt_data.mode) {
+		switch (app_state.mode()) {
 			case Mode::Vision: {
 				cv::Mat frame;
 				auto result = camera.read_to(frame);
@@ -336,7 +339,7 @@ int main(int argc, char **argv) {
 						continue;
 					} else {
 						// some other error has occured, don't do vision anymore
-						mqtt_data.mode = Mode::None;
+						app_state.set_mode(Mode::None);
 						report_error(result);
 					}
 				}
@@ -372,7 +375,7 @@ int main(int argc, char **argv) {
 			case Mode::RemoteViewing: {
 				auto result = remote_viewing.update();
 				if (result.is_err()) {
-					mqtt_data.mode = Mode::None;
+					app_state.set_mode(Mode::None);
 					report_error(result);
 				}
 				break;
