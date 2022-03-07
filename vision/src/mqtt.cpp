@@ -1,20 +1,38 @@
 #include "mqtt.h"
 #include <mosquitto.h>
+#include <optional>
 #include <unistd.h>
 #include <stdexcept>
 #include "logging.h"
 
-MqttClient::MqttClient() {}
+MqttClient::MqttClient(MqttClient&& client) {
+	m_client = client.m_client;
+	client.m_client = nullptr;
+	m_callback_data = std::move(client.m_callback_data);
+}
+
+MqttClient& MqttClient::operator=(MqttClient&& client) {
+	m_client = client.m_client;
+	client.m_client = nullptr;
+	m_callback_data = std::move(client.m_callback_data);
+	return *this;
+}
+
+MqttClient::MqttClient(mosquitto *client, std::unique_ptr<CallbackData>&& callback_data):
+m_client(client),
+m_callback_data(std::move(callback_data)) {}
 
 MqttClient::~MqttClient() {
-	mosquitto_destroy(m_client);
+	if (m_client) {
+		mosquitto_destroy(m_client);
+	}
 }
 
 std::optional<MqttClient> MqttClient::create(const std::string& host, int port) {
-	MqttClient out;
-
+	auto *callback_data = new CallbackData;
 	auto client_name = std::string {"vision_"} + std::to_string(getpid());
-	auto *client = mosquitto_new(client_name.c_str(), true, &out);
+
+	auto *client = mosquitto_new(client_name.c_str(), true, callback_data);
 	if (client == nullptr) {
 		return {};
 	}
@@ -25,8 +43,7 @@ std::optional<MqttClient> MqttClient::create(const std::string& host, int port) 
 		return {};
 	}
 
-	out.m_client = client;
-	return out;
+	return std::make_optional<MqttClient>(MqttClient(client, std::unique_ptr<CallbackData>(callback_data)));
 }
 
 Error MqttClient::update() {
@@ -88,7 +105,7 @@ Error MqttClient::publish(const std::string& topic, const std::string &payload) 
 }
 
 void MqttClient::unsubscribe(const std::string& topic) {
-	m_callbacks.erase(topic);
+	m_callback_data->callbacks.erase(topic);
 	if(mosquitto_unsubscribe(m_client, nullptr, topic.c_str())) {
 		// don't return an error, since this isn't an error that needs to be handled
 		// MqttClient will handle it by not calling the callback anymore
@@ -97,11 +114,11 @@ void MqttClient::unsubscribe(const std::string& topic) {
 }
 
 void MqttClient::mqtt_message_callback(mosquitto *mosq, void *data, const mosquitto_message *msg) {
-	MqttClient *client = (MqttClient *) data;
+	CallbackData *callback_data = (CallbackData *) data;
 	std::string topic(msg->topic);
 
 	try {
-		auto callback = client->m_callbacks.at(topic);
+		auto callback = callback_data->callbacks.at(topic);
 		callback.callback(std::string_view((char *) msg->payload, msg->payloadlen), callback.data);
 	} catch (const std::out_of_range& err) {
 		lg::warn("warning: no callback for topic %s", topic.c_str());

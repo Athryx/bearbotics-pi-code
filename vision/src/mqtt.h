@@ -5,16 +5,24 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <memory>
 #include "error.h"
 
-struct CallbackData {
+struct CallbackEntry {
 	// callback data must be void pointer because we store many different types of callbacks in the callbacks hashmap
 	void (*callback)(std::string_view, void*);
 	void *data;
 };
 
+struct CallbackData {
+	std::unordered_map<std::string, CallbackEntry> callbacks {};
+};
+
 class MqttClient {
 	public:
+		MqttClient(MqttClient&& client);
+		MqttClient& operator=(MqttClient&& client);
+
 		static std::optional<MqttClient> create(const std::string& host, int port);
 		~MqttClient();
 
@@ -25,19 +33,19 @@ class MqttClient {
 		// calback takes in a string_view of the message and a pointer to the passed in object
 		template<typename T>
 		bool subscribe(const std::string& topic, void (*callback)(std::string_view, T*), T* data) {
-			auto callback_data = CallbackData {
+			auto callback_entry = CallbackEntry {
 				.callback = (void (*)(std::string_view, void*)) callback,
 				.data = data
 			};
 
 			// insert doesn't remove old elements, so delete the previous callback is it exists
-			m_callbacks.erase(topic);
+			m_callback_data->callbacks.erase(topic);
 			// do this before subscribing to avoid race condition
-			m_callbacks.insert(std::pair(topic, callback_data));
+			m_callback_data->callbacks.insert(std::pair(topic, callback_entry));
 
 			// TODO: figure out if subscribing twice is a problem
 			if (mosquitto_subscribe(m_client, nullptr, topic.c_str(), 0)) {
-				m_callbacks.erase(topic);
+				m_callback_data->callbacks.erase(topic);
 				return false;
 			}
 
@@ -45,12 +53,12 @@ class MqttClient {
 		}
 
 		void unsubscribe(const std::string& topic);
-	
+
 	private:
-		MqttClient();
+		MqttClient(mosquitto *client, std::unique_ptr<CallbackData>&& callback_data);
 
 		static void mqtt_message_callback(mosquitto *mosq, void *data, const mosquitto_message *msg);
 
 		mosquitto *m_client;
-		std::unordered_map<std::string, CallbackData> m_callbacks;
+		std::unique_ptr<CallbackData> m_callback_data;
 };
