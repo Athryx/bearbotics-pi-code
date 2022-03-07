@@ -146,6 +146,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 			return std::atoi(str.c_str());
 		});
 
+	// TODO: make this apply to computer vision
 	program.add_argument("--cam-width")
 		.help("pixel width of image read in from camera, it is downscaled or upscaled to match the --image-width argument, by default it is the same as --image-height")
 		.default_value(320)
