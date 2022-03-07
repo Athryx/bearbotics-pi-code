@@ -16,7 +16,7 @@ m_cap(),
 m_cam_width(width),
 m_cam_height(height),
 m_max_fps(fps),
-m_filename(filename) {}
+m_filename(std::move(filename)) {}
 
 VisionCamera::~VisionCamera() {
 	stop().ignore();

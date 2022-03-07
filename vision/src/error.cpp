@@ -48,7 +48,7 @@ m_message(message) {}
 
 Error::Error(ErrorType type, std::string&& message):
 m_type(type),
-m_message(message) {}
+m_message(std::move(message)) {}
 
 Error::~Error() {}
 
