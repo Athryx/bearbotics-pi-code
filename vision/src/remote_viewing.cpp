@@ -7,15 +7,16 @@
 #include "logging.h"
 
 // XXX: this will fail and exit the program if something goes wrong
-RemoteViewing::RemoteViewing(const std::string& host, u16 port, int width, int height) {
+RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width, int input_height, int processing_width, int processing_height) {
 	// TODO: set these properties without using parse_luanch
 	// Read the video in at 1920x1080 and then scale it, becuase rading it in at a lower resolution
 	// will reduce the field of view on the raspberry pi camera that we have
 	// TODO: make the resolution we read in from the camera configurable
-	auto pipeline_description = std::string("v4l2src device=\"/dev/video0\" ! video/x-raw,width=1920,height=1080"
-		" ! videoscale ! video/x-raw,width=" + std::to_string(width) + ",height=" + std::to_string(height) +
+	auto pipeline_description = "v4l2src device=\"/dev/video0\""
+		" ! video/x-raw,width=" + std::to_string(input_width) + ",height=" + std::to_string(input_height) +
+		" ! videoscale ! video/x-raw,width=" + std::to_string(processing_width) + ",height=" + std::to_string(processing_height) +
 		" ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
-		" ! rtph264pay config-interval=10 pt=96 ! udpsink host=") + host + std::string(" port=") + std::to_string(port);
+		" ! rtph264pay config-interval=10 pt=96 ! udpsink host=" + host + " port=" + std::to_string(port);
 
 	m_pipeline = gst_parse_launch(pipeline_description.c_str(), nullptr);
 	assert(m_pipeline != nullptr);
@@ -51,11 +52,11 @@ Error RemoteViewing::update() {
 		char *debug_message;
 
 		auto msg_type = GST_MESSAGE_TYPE(msg);
-		gst_message_unref(msg);
 
 		switch (msg_type) {
 			case GST_MESSAGE_EOS:
 				lg::warn("end of stream reached");
+				gst_message_unref(msg);
 				return Error::resource_unavailable("unexpected end of stream message recieved from remote viewing pipeline");
 			case GST_MESSAGE_ERROR: {
 				gst_message_parse_error(msg, &err, &debug_message);
@@ -70,10 +71,12 @@ Error RemoteViewing::update() {
 				g_clear_error(&err);
 				g_free(debug_message);
 
+				gst_message_unref(msg);
 				return Error::library(std::move(error_string));
 			}
 			default:
 				lg::warn("unexpected message type recieved");
+				gst_message_unref(msg);
 				return Error::unknown("unexpected message type recieved from remote viewing gstreamer pipeline");
 		}
 	}

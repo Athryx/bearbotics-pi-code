@@ -132,15 +132,29 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 			return std::atoi(str.c_str());
 		});
 
-	program.add_argument("-w", "--width")
-		.help("camera pixel width")
+	program.add_argument("-w", "--image-width")
+		.help("pixel width of image put through computer vision and remote viewing")
 		.default_value(320)
 		.action([] (const std::string& str) {
 			return std::atoi(str.c_str());
 		});
 
-	program.add_argument("-h", "--height")
-		.help("camera pixel height")
+	program.add_argument("-h", "--image-height")
+		.help("pixel height of image put through computer vision and remote viewing")
+		.default_value(240)
+		.action([] (const std::string& str) {
+			return std::atoi(str.c_str());
+		});
+
+	program.add_argument("--cam-width")
+		.help("pixel width of image read in from camera, it is downscaled or upscaled to match the --image-width argument, by default it is the same as --image-height")
+		.default_value(320)
+		.action([] (const std::string& str) {
+			return std::atoi(str.c_str());
+		});
+
+	program.add_argument("--cam-height")
+		.help("pixel height of image read on from camera, it is downscaled or upscaled to match the --image-height argument, by default it is the same as --image-height")
 		.default_value(240)
 		.action([] (const std::string& str) {
 			return std::atoi(str.c_str());
@@ -249,8 +263,10 @@ int main(int argc, char **argv) {
 
 	const bool display_flag = program.get<bool>("--display");
 	const long max_fps = program.get<int>("--fps");
-	const int cam_width = program.get<int>("--width");
-	const int cam_height = program.get<int>("--height");
+	const int image_width = program.get<int>("--image-width");
+	const int image_height = program.get<int>("--image-height");
+	const int cam_width = program.is_used("--cam-width") ? program.get<int>("--cam-width") : image_width;
+	const int cam_height = program.is_used("--cam-height") ? program.get<int>("--cam-height") : image_height;
 	const int threads = program.get<int>("--threads");
 
 	if (threads < 1) {
@@ -312,11 +328,11 @@ int main(int argc, char **argv) {
 
 	const auto rtp_host = program.get("--rtp-host");
 	const auto rtp_port = program.get<int>("--rtp-port");
-	RemoteViewing remote_viewing(rtp_host, rtp_port, cam_width, cam_height);
+	RemoteViewing remote_viewing(rtp_host, rtp_port, cam_width, cam_height, image_width, image_height);
 
 
 	auto file_name = program.get<std::optional<std::string>>("--camera");
-	VisionCamera camera(std::move(file_name), cam_width, cam_height, max_fps);
+	VisionCamera camera(std::move(file_name), image_width, image_height, max_fps);
 
 	auto template_file = program.get("template");
 	auto template_img = cv::imread(template_file, -1);
