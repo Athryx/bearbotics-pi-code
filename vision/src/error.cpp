@@ -75,7 +75,20 @@ std::optional<Error> Error::deserialize(const std::string& string) {
 		return {};
 	}
 
-	// TODO: figure out if this captures the space character
+	char space_char;
+	iss.get(space_char);
+	if (iss.eof()) {
+		// no error message is present
+		return Error(*err_type, std::string());
+	} else if (iss.good()) {
+		// ensure next character is space
+		if (space_char != ' ') {
+			return {};
+		}
+	} else if (iss.bad()) {
+		return {};
+	}
+
 	std::string message(std::istreambuf_iterator<char>(iss), {});
 
 	return Error(*err_type, std::move(message));
