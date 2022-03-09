@@ -23,6 +23,7 @@ class MqttClient {
 		MqttClient(MqttClient&& client);
 		MqttClient& operator=(MqttClient&& client);
 
+		// creates new mqtt client, returns none on failure
 		static std::optional<MqttClient> create(const std::string& host, int port);
 		~MqttClient();
 
@@ -32,7 +33,7 @@ class MqttClient {
 
 		// calback takes in a string_view of the message and a pointer to the passed in object
 		template<typename T>
-		bool subscribe(const std::string& topic, void (*callback)(std::string_view, T*), T* data) {
+		Error subscribe(const std::string& topic, void (*callback)(std::string_view, T*), T* data) {
 			auto callback_entry = CallbackEntry {
 				.callback = (void (*)(std::string_view, void*)) callback,
 				.data = data
@@ -46,10 +47,11 @@ class MqttClient {
 			// TODO: figure out if subscribing twice is a problem
 			if (mosquitto_subscribe(m_client, nullptr, topic.c_str(), 0)) {
 				m_callback_data->callbacks.erase(topic);
-				return false;
+				// TODO: report more specific error
+				return Error::library("could not subscribe to mqtt topic");
 			}
 
-			return true;
+			return Error::ok();
 		}
 
 		void unsubscribe(const std::string& topic);

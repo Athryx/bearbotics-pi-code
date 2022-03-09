@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
 			lg::critical("could not create MqttClient");
 		}
 
-		if (!mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &app_state)) {
+		if (mqtt_client->subscribe(mqtt_control_topic, mqtt_control_callback, &app_state).is_err()) {
 			lg::warn("could not subscribe to mqtt control topic %s", mqtt_control_topic.c_str());
 		}
 	}

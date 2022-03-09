@@ -24,6 +24,7 @@ enum class ErrorType: int {
 };
 
 const char* error_type_to_string(ErrorType type);
+// returns none if the int is not a valid error type
 std::optional<ErrorType> error_type_from_int(int n);
 
 #define ERROR_CONSTRUCTOR_DEFS(ctor_name, error_type)												\
@@ -41,6 +42,7 @@ class [[nodiscard]] Error {
 
 		static inline Error ok() { return Error(ErrorType::Ok); }
 
+		// error constructors to more easily make an error of a certain type
 		ERROR_CONSTRUCTOR_DEFS(internal, ErrorType::Internal)
 		ERROR_CONSTRUCTOR_DEFS(library, ErrorType::Library)
 		ERROR_CONSTRUCTOR_DEFS(unknown, ErrorType::Unknown)
@@ -54,9 +56,12 @@ class [[nodiscard]] Error {
 		std::string serialize() const;
 		static std::optional<Error> deserialize(const std::string& string);
 
+		// make a string to be displayed to the user
 		std::string to_string() const;
 
+		// get error type
 		ErrorType type() const;
+		// get error message
 		const std::string& message() const;
 
 		bool is_ok() const;
@@ -64,6 +69,7 @@ class [[nodiscard]] Error {
 		bool is(ErrorType type) const;
 
 		void ignore() const;
+		// terminates program if this error is not ok
 		void assert_ok() const;
 
 	private:

@@ -126,6 +126,6 @@ void Error::ignore() const {
 
 void Error::assert_ok() const {
 	if (is_err()) {
-		lg::critical("assertion failed: error is not ok: %x", to_string().c_str());
+		lg::critical("assertion failed: error is not ok: %s", to_string().c_str());
 	}
 }
