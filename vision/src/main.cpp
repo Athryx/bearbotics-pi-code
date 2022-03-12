@@ -8,6 +8,7 @@
 #include "error.h"
 #include <gst/gst.h>
 #include <opencv2/opencv.hpp>
+#include <ratio>
 #include <sstream>
 #include <stdexcept>
 #include <stdio.h>
@@ -18,6 +19,8 @@
 #include <string_view>
 #include <algorithm>
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 enum class Mode {
 	Vision,
@@ -39,9 +42,11 @@ const char* mode_to_string(Mode mode) {
 }
 
 // TODO: acutally do something with set color
+// what team to look for balls on
 enum class Team {
 	Red,
 	Blue,
+	Both,
 };
 
 // TODO: modify argparse to allow overiding default represented value string
@@ -112,12 +117,14 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 
 	program.add_argument("--team")
 		.help("what team to recognise balls for, default is red")
-		.default_value(Team::Red)
+		.default_value(Team::Both)
 		.action([] (const std::string& str) {
 			if (str == "red") {
 				return Team::Red;
 			} else if (str == "blue") {
 				return Team::Blue;
+			} else if (str == "both") {
+				return Team::Both;
 			} else {
 				throw std::runtime_error("invalid argument for --team: must be either 'red' or 'blue'");
 			}
@@ -247,10 +254,12 @@ void mqtt_control_callback(std::string_view msg, AppState *data) {
 		data->set_mode(Mode::RemoteViewing);
 	} else if (msg == "mode none") {
 		data->set_mode(Mode::None);
-	} else if (msg == "team red") {
+	} else if (msg == "balls red") {
 		data->set_team(Team::Red);
-	} else if (msg == "team blue") {
+	} else if (msg == "balls blue") {
 		data->set_team(Team::Blue);
+	} else if (msg == "balls both") {
+		data->set_team(Team::Both);
 	} else {
 		lg::warn("recieved invalid control message");
 	}
@@ -264,6 +273,8 @@ int main(int argc, char **argv) {
 
 	const bool display_flag = program.get<bool>("--display");
 	const long max_fps = program.get<int>("--fps");
+	// the amount of time that will pass between each fram with the given framerate
+	std::chrono::milliseconds frame_interval(1000 / max_fps);
 	const int image_width = program.get<int>("--image-width");
 	const int image_height = program.get<int>("--image-height");
 	const int cam_width = program.is_used("--cam-width") ? program.get<int>("--cam-width") : image_width;
@@ -350,8 +361,8 @@ int main(int argc, char **argv) {
 	long total_time = 0;
 	long frames = 0;
 
-	// TODO: don't constantly loop
 	for(;;) {
+		auto next_fram_time = std::chrono::steady_clock::now() + frame_interval;
 		// check if mode has changed
 		if (app_state.has_mode_changed()) {
 
@@ -465,6 +476,9 @@ int main(int argc, char **argv) {
 
 		// this is necessary to poll events for opencv highgui
 		if (display_flag) cv::pollKey();
+
+		// sleep until next frame occurs, or just continue looping if it is already ready
+		std::this_thread::sleep_until(next_fram_time);
 	}
 
 	if (mqtt_flag) {
