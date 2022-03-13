@@ -41,14 +41,6 @@ const char* mode_to_string(Mode mode) {
 	return "";
 }
 
-// TODO: acutally do something with set color
-// what team to look for balls on
-enum class Team {
-	Red,
-	Blue,
-	Both,
-};
-
 // TODO: modify argparse to allow overiding default represented value string
 // TODO: allow setting what to log
 argparse::ArgumentParser parse_args(int argc, char **argv) {
@@ -115,18 +107,18 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		.default_value(Mode::Vision)
 		.implicit_value(Mode::RemoteViewing);
 
-	program.add_argument("--team")
-		.help("what team to recognise balls for, default is red")
-		.default_value(Team::Both)
+	program.add_argument("--target-type")
+		.help("what type of target to look for, default is all")
+		.default_value(TargetType::All)
 		.action([] (const std::string& str) {
-			if (str == "red") {
-				return Team::Red;
-			} else if (str == "blue") {
-				return Team::Blue;
-			} else if (str == "both") {
-				return Team::Both;
+			if (str == "red-ball") {
+				return TargetType::RedBall;
+			} else if (str == "blue-ball") {
+				return TargetType::BlueBall;
+			} else if (str == "all") {
+				return TargetType::All;
 			} else {
-				throw std::runtime_error("invalid argument for --team: must be either 'red' or 'blue'");
+				throw std::runtime_error("invalid argument for --team: must be either 'red-ball', 'blue-ball', or 'all'");
 			}
 		});
 
@@ -208,13 +200,13 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 class AppState {
 	public:
 		// sets old mode to none to force mode init to be initially run
-		AppState(Mode mode, Team team):
+		AppState(Mode mode, TargetType targets):
 		m_mode(mode),
-		m_team(team),
+		m_targets(targets),
 		m_old_mode(Mode::None) {}
 
 		Mode mode() const { return m_mode; }
-		Team team() const { return m_team; }
+		TargetType targets() const { return m_targets; }
 
 		void set_mode(Mode new_mode) {
 			if (new_mode != m_mode) {
@@ -235,13 +227,13 @@ class AppState {
 			m_old_mode = {};
 		}
 
-		void set_team(Team team) {
-			m_team = team;
+		void set_targets(TargetType targets) {
+			m_targets = targets;
 		}
 
 	private:
 		Mode m_mode;
-		Team m_team;
+		TargetType m_targets;
 		// this will be none under normal circumstances, and set to Some(old mode) after mode change
 		std::optional<Mode> m_old_mode;
 };
@@ -254,12 +246,12 @@ void mqtt_control_callback(std::string_view msg, AppState *data) {
 		data->set_mode(Mode::RemoteViewing);
 	} else if (msg == "mode none") {
 		data->set_mode(Mode::None);
-	} else if (msg == "balls red") {
-		data->set_team(Team::Red);
-	} else if (msg == "balls blue") {
-		data->set_team(Team::Blue);
-	} else if (msg == "balls both") {
-		data->set_team(Team::Both);
+	} else if (msg == "targets red_balls") {
+		data->set_targets(TargetType::RedBall);
+	} else if (msg == "targets blue_balls") {
+		data->set_targets(TargetType::BlueBall);
+	} else if (msg == "targets all") {
+		data->set_targets(TargetType::All);
 	} else {
 		lg::warn("recieved invalid control message");
 	}
@@ -292,7 +284,7 @@ int main(int argc, char **argv) {
 	const auto mqtt_control_topic = program.get("--control-topic");
 	const auto mqtt_error_topic = program.get("--error-topic");
 
-	AppState app_state(program.get<Mode>("--remote-viewing"), program.get<Team>("--team"));
+	AppState app_state(program.get<Mode>("--remote-viewing"), program.get<TargetType>("--target-type"));
 
 	std::optional<MqttClient> mqtt_client {};
 	if (mqtt_flag) {
@@ -362,7 +354,9 @@ int main(int argc, char **argv) {
 	long frames = 0;
 
 	for(;;) {
-		auto next_fram_time = std::chrono::steady_clock::now() + frame_interval;
+		// the time we will need to wake up for next frame
+		auto next_frame_time = std::chrono::steady_clock::now() + frame_interval;
+
 		// check if mode has changed
 		if (app_state.has_mode_changed()) {
 
@@ -428,8 +422,8 @@ int main(int argc, char **argv) {
 				}
 
 				long elapsed_time;
-				auto target = time<std::optional<Target>>("frame", [&] () {
-					return vis.process(frame);
+				auto targets = time<std::vector<Target>>("frame", [&] () {
+					return vis.process(frame, app_state.targets());
 				}, &elapsed_time);
 
 				total_time += elapsed_time;
@@ -441,7 +435,7 @@ int main(int argc, char **argv) {
 				printf("\n");
 
 				if (mqtt_flag) {
-					if (target.has_value()) {
+					/*if (target.has_value()) {
 						snprintf(msg, msg_len, "1 %6.2f %6.2f", target->distance, target->angle);
 					} else {
 						snprintf(msg, msg_len, "0 %6.2f %6.2f", 0.0f, 0.0f);
@@ -451,7 +445,7 @@ int main(int argc, char **argv) {
 					auto result = mqtt_client->publish(mqtt_topic, std::string(msg));
 					if (result.is_err()) {
 						lg::error("could not publish vision data to mqtt: %s", result.to_string().c_str());
-					}
+					}*/
 				}
 				break;
 			}
@@ -478,7 +472,7 @@ int main(int argc, char **argv) {
 		if (display_flag) cv::pollKey();
 
 		// sleep until next frame occurs, or just continue looping if it is already ready
-		std::this_thread::sleep_until(next_fram_time);
+		std::this_thread::sleep_until(next_frame_time);
 	}
 
 	if (mqtt_flag) {
