@@ -90,7 +90,7 @@ struct ScoreWeights {
 // data about a desired type of target used to help recognise it
 class TargetSearchData {
 	public:
-		TargetSearchData(TargetType target_type, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
+		TargetSearchData(TargetType target_type, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
 
 		// returns true if this is the passed in target type
 		bool is(TargetType type) const;
@@ -99,6 +99,10 @@ class TargetSearchData {
 
 		// type of target that this is
 		TargetType target_type;
+
+		// name of the template file
+		// will try and open the template file in the passed in template directory
+		std::string template_name;
 
 		// minimum and maximum hsv values for threshholding this object
 		cv::Scalar thresh_min;
@@ -121,13 +125,14 @@ class TargetSearchData {
 // TODO: use correct display names for when display flag is true
 class Vision {
 	public:
-		Vision(cv::Mat template_img, int threads, bool display);
+		Vision(int threads, bool display);
 		~Vision();
 
 		void set_threads(int threads);
 
-		// processess the template to get the area fraction and the contour
-		void process_template(cv::Mat img, TargetType targets);
+		// processess all templates to get required paramaters to look for targets
+		// returns error if any of the files cannot be opened
+		Error process_templates(const std::string& template_directory);
 
 		// processess the image to find targets
 		// pass in targets bitflags to say which targets we can look for
@@ -149,9 +154,11 @@ class Vision {
 		bool m_display;
 
 		// change this to change which targets we can look for
+		// maybe when vision is mature these can be read in from a file
 		std::vector<TargetSearchData> m_target_data {
 			TargetSearchData(
 				TargetType::RedBall,
+				"red-ball-template.jpg",
 				cv::Scalar(10, 70, 70),
 				cv::Scalar(40, 255, 255),
 				1.5,
@@ -162,6 +169,7 @@ class Vision {
 			),
 			TargetSearchData(
 				TargetType::BlueBall,
+				"blue-ball-template.jpg",
 				cv::Scalar(10, 70, 70),
 				cv::Scalar(40, 255, 255),
 				1.5,

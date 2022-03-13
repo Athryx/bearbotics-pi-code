@@ -88,8 +88,9 @@ std::optional<std::string_view> target_type_to_string(TargetType type) {
 }
 
 
-TargetSearchData::TargetSearchData(TargetType target_type, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
+TargetSearchData::TargetSearchData(TargetType target_type, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
 target_type(target_type),
+template_name(std::move(template_name)),
 thresh_min(thresh_min),
 thresh_max(thresh_max),
 min_score(min_score),
@@ -116,11 +117,9 @@ bounding_box(cv::boundingRect(contour)),
 contour(std::move(contour)) {}
 
 
-Vision::Vision(cv::Mat template_img, int threads, bool display):
+Vision::Vision(int threads, bool display):
 m_threads(threads),
-m_display(display) {
-	process_template(template_img, TargetType::All);
-}
+m_display(display) {}
 
 Vision::~Vision() {}
 
@@ -128,13 +127,14 @@ void Vision::set_threads(int threads) {
 	m_threads = threads;
 }
 
-void Vision::process_template(cv::Mat img, TargetType type) {
+Error Vision::process_templates(const std::string& template_directory) {
 	for (auto& target_data : m_target_data) {
-		if (!target_data.is(type)) {
-			continue;
+		auto template_file = std::string(template_directory) + "/" + target_data.template_name;
+		auto img_template = cv::imread(template_file, -1);
+		if (img_template.empty()) {
+			return Error::resource_unavailable("could not open template file: " + template_file);
 		}
 
-		auto img_template = img.clone();
 		cv::cvtColor(img_template, img_template, cv::COLOR_BGR2HSV, 8);
 		cv::inRange(img_template, target_data.thresh_min, target_data.thresh_max, img_template);
 		// TODO: pass kernel into morphologyEx instead of plain cv::Mat()
@@ -161,6 +161,8 @@ void Vision::process_template(cv::Mat img, TargetType type) {
 		target_data.template_area_frac = max_area / bounding_box.area();
 		target_data.template_aspect_ratio = (double) bounding_box.width / (double) bounding_box.height;
 	}
+
+	return Error::ok();
 }
 
 std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {

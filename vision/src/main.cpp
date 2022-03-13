@@ -182,8 +182,8 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 			return str;
 		});
 
-	program.add_argument("template")
-		.help("template image file to process");
+	program.add_argument("template-dir")
+		.help("template directory containing all template files");
 
 
 	try {
@@ -338,12 +338,12 @@ int main(int argc, char **argv) {
 	auto file_name = program.get<std::optional<std::string>>("--camera");
 	VisionCamera camera(std::move(file_name), image_width, image_height, max_fps);
 
-	auto template_file = program.get("template");
-	auto template_img = cv::imread(template_file, -1);
-	if (template_img.empty()) {
-		lg::critical("template file '%s' empty or missing", template_file.c_str());
+	Vision vis(threads, display_flag);
+	auto template_dir = program.get("template-dir");
+	auto template_res = vis.process_templates(template_dir);
+	if (template_res.is_err()) {
+		lg::critical("%s", template_res.to_string().c_str());
 	}
-	Vision vis(template_img, threads, display_flag);
 
 
 	const usize msg_len = 32;
