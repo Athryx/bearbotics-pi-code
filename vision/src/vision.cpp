@@ -116,7 +116,8 @@ bounding_box(cv::boundingRect(contour)),
 contour(std::move(contour)) {}
 
 
-Vision::Vision(int threads, bool display):
+Vision::Vision(double fov, int threads, bool display):
+m_fov(fov),
 m_threads(threads),
 m_display(display) {}
 
@@ -256,6 +257,8 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 				continue;
 			}
 
+			double fovx = m_fov;
+			double fovy = fovx /* height / width */;
 			/*target.distance = 11386.95362494479 * (1.0 / rect.width);
 			auto xpos = rect.x + rect.width / 2;
 			target.angle = atan((xpos - 320) / 530.47) * (180.0 / M_PI) + 16;*/

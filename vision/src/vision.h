@@ -142,7 +142,8 @@ class TargetSearchData {
 // TODO: use correct display names for when display flag is true
 class Vision {
 	public:
-		Vision(int threads, bool display);
+		// field of view is field of view of camera, it doesn't matter for the template images
+		Vision(double fov, int threads, bool display);
 		~Vision();
 
 		void set_threads(int threads);
@@ -165,6 +166,8 @@ class Vision {
 		// the higher it is, the faster it falls off
 		static double similarity(double a, double b, double k = 1.0);
 
+		// field of view of images being processed
+		double m_fov;
 		// how man threads to use for processing certain operations in parallell
 		int m_threads;
 		// true to display the frames for debugging

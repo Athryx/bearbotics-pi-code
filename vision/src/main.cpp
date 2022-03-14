@@ -6,6 +6,7 @@
 #include "util.h"
 #include "logging.h"
 #include "error.h"
+#include <cstdlib>
 #include <gst/gst.h>
 #include <opencv2/opencv.hpp>
 #include <ratio>
@@ -160,6 +161,14 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 			return std::atoi(str.c_str());
 		});
 
+	program.add_argument("--fov")
+		.help("horizantal field of view of the camera. This camera is not set to the passed in fov, but the passed in fov is used to calculate distance and angle")
+		// I think this is the default value for the pi v2 camera
+		.default_value(47.0)
+		.action([] (const std::string& str) {
+			return std::atof(str.c_str());
+		});
+
 
 	program.add_argument("-d", "--display")
 		.help("display processing frames")
@@ -271,6 +280,7 @@ int main(int argc, char **argv) {
 	const int image_height = program.get<int>("--image-height");
 	const int cam_width = program.is_used("--cam-width") ? program.get<int>("--cam-width") : image_width;
 	const int cam_height = program.is_used("--cam-height") ? program.get<int>("--cam-height") : image_height;
+	const double fov = program.get<double>("--fov");
 	const int threads = program.get<int>("--threads");
 
 	if (threads < 1) {
