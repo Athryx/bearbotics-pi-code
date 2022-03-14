@@ -103,8 +103,11 @@ class TargetSearchData {
 
 		// names of the various processing frames that will be displayed when the -d flag is specified
 		// these are here so that they are computed beforehand to avoid expensive allocation in hot loop
+		std::string hsv_name {};
 		std::string threshold_name {};
 		std::string morphology_name {};
+		std::string contour_name {};
+		std::string matching_name {};
 
 		// name of the template file
 		// will try and open the template file in the passed in template directory

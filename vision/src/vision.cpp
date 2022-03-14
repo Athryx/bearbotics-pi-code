@@ -97,8 +97,11 @@ thresh_min(thresh_min),
 thresh_max(thresh_max),
 min_score(min_score),
 weights(weights) {
+	hsv_name = name + " HSV Conversion";
 	threshold_name = name + " Threshold";
 	morphology_name = name + " Morphology";
+	contour_name = name + " Contours";
+	matching_name = name + " Contour Matching";
 }
 
 bool TargetSearchData::is(TargetType type) const {
@@ -167,26 +170,25 @@ Error Vision::process_templates(const std::string& template_directory) {
 std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 	std::vector<Target> out;
 
+	show("Input", img);
+
 	for (const auto& target_data : m_target_data) {
 		if (!target_data.is(type)) {
-		printf("hi2\n");
 			continue;
 		}
 
 		cv::Size size(img.cols, img.rows);
 
-		show("Input", img);
-
 		// TODO: find a way to configure what type of colorspace image is input
 		cv::Mat img_hsv(size, img.type());
-		time("HSV conversion", [&] () {
+		time(target_data.hsv_name.c_str(), [&] () {
 			task(img, img_hsv, [] (cv::Mat in, cv::Mat out) {
 				cv::cvtColor(in, out, cv::COLOR_BGR2HSV, 8);
 			});
 		});
 
 		cv::Mat img_thresh(size, CV_8U);
-		time("Threshold", [&] () {
+		time(target_data.threshold_name.c_str(), [&] () {
 			task(img_hsv, img_thresh, [&] (cv::Mat in, cv::Mat out) {
 				cv::inRange(in, target_data.thresh_min, target_data.thresh_max, out);
 			});
@@ -195,14 +197,14 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 
 		cv::Mat img_morph(size, CV_8U);
 		// TODO: pass kernel into morphologyEx instead of plain cv::Mat()
-		time("Morphology", [&] () {
+		time(target_data.morphology_name.c_str(), [&] () {
 			cv::morphologyEx(img_thresh, img_morph, cv::MORPH_OPEN, cv::Mat());
 		});
 		show(target_data.morphology_name, img_morph);
 
 		// TODO: reserve eneough space in vector to prevent reallocations
 		std::vector<std::vector<cv::Point>> contours;
-		time("Contours", [&] () {
+		time(target_data.contour_name.c_str(), [&] () {
 			cv::findContours(img_morph, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 		});
 
@@ -213,25 +215,18 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 			targets.push_back(IntermediateTarget(std::move(contour)));
 		}
 
-		time("Contour Matching", [&] () {
+		time(target_data.matching_name.c_str(), [&] () {
 			for (auto& target : targets) {
-				double score = cv::matchShapes(target_data.template_contour, target.contour, cv::CONTOURS_MATCH_I3, 0.0);
-				target.score += score * target_data.weights.contour_match;
-			}
-		});
+				// contour matching with cv::matchShapes
+				double match_shapes_score = cv::matchShapes(target_data.template_contour, target.contour, cv::CONTOURS_MATCH_I3, 0.0);
+				target.score += match_shapes_score * target_data.weights.contour_match;
 
-		time("Area Fraction", [&] () {
-			for (auto& target : targets) {
 				// compute fraction of bounding rectangle taken up by the actual contour
 				double area_frac = cv::contourArea(target.contour) / target.bounding_box.area();
 				// TODO: add a per target way to configure k
 				double score = similarity(area_frac, target_data.template_area_frac, 70.0);
 				target.score += score * target_data.weights.area_frac;
-			}
-		});
 
-		time("Bounding Box Aspect Ratio", [&] {
-			for (auto& target : targets) {
 				// TODO figure out how to linearlize this
 				double aspect_ratio = (double) target.bounding_box.width / (double) target.bounding_box.height;
 			}
