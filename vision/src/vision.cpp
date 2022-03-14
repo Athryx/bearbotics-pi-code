@@ -89,27 +89,20 @@ std::optional<std::string_view> target_type_to_string(TargetType type) {
 }
 
 
-TargetSearchData::TargetSearchData(TargetType target_type, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
+TargetSearchData::TargetSearchData(TargetType target_type, std::string&& in_name, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
 target_type(target_type),
+name(std::move(in_name)),
 template_name(std::move(template_name)),
 thresh_min(thresh_min),
 thresh_max(thresh_max),
 min_score(min_score),
 weights(weights) {
-	auto name = target_type_to_string(target_type);
-	if (name.has_value()) {
-		m_name = std::string(*name) + " data";
-	} else {
-		m_name = std::string("mixed data");
-	}
+	threshold_name = name + " Threshold";
+	morphology_name = name + " Morphology";
 }
 
 bool TargetSearchData::is(TargetType type) const {
-	return target_type_contains(target_type, type);
-}
-
-const std::string& TargetSearchData::get_name() const {
-	return m_name;
+	return target_type_contains(type, target_type);
 }
 
 
@@ -137,11 +130,8 @@ Error Vision::process_templates(const std::string& template_directory) {
 		}
 
 		// TODO: find a way to configure what type of colorspace image is input
-		show_wait("tmp", img_template);
 		cv::cvtColor(img_template, img_template, cv::COLOR_RGB2HSV);
-		show_wait("tmp", img_template);
 		cv::inRange(img_template, target_data.thresh_min, target_data.thresh_max, img_template);
-		show_wait("tmp", img_template);
 		// TODO: pass kernel into morphologyEx instead of plain cv::Mat()
 		cv::morphologyEx(img_template, img_template, cv::MORPH_OPEN, cv::Mat());
 
@@ -179,6 +169,7 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 
 	for (const auto& target_data : m_target_data) {
 		if (!target_data.is(type)) {
+		printf("hi2\n");
 			continue;
 		}
 
@@ -200,14 +191,14 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 				cv::inRange(in, target_data.thresh_min, target_data.thresh_max, out);
 			});
 		});
-		show("Threshold", img_thresh);
+		show(target_data.threshold_name, img_thresh);
 
 		cv::Mat img_morph(size, CV_8U);
 		// TODO: pass kernel into morphologyEx instead of plain cv::Mat()
 		time("Morphology", [&] () {
 			cv::morphologyEx(img_thresh, img_morph, cv::MORPH_OPEN, cv::Mat());
 		});
-		show("Morphology", img_morph);
+		show(target_data.morphology_name, img_morph);
 
 		// TODO: reserve eneough space in vector to prevent reallocations
 		std::vector<std::vector<cv::Point>> contours;

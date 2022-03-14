@@ -183,7 +183,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		});
 
 	program.add_argument("template-dir")
-		.help("template directory containing all template files");
+		.help("template directory containing all template files, which must be 8 bits per channel rgb images");
 
 
 	try {

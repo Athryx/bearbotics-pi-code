@@ -90,15 +90,21 @@ struct ScoreWeights {
 // data about a desired type of target used to help recognise it
 class TargetSearchData {
 	public:
-		TargetSearchData(TargetType target_type, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
+		TargetSearchData(TargetType target_type, std::string&& name, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
 
 		// returns true if this is the passed in target type
 		bool is(TargetType type) const;
 
-		const std::string& get_name() const;
-
 		// type of target that this is
 		TargetType target_type;
+
+		// human readable name of this target
+		std::string name;
+
+		// names of the various processing frames that will be displayed when the -d flag is specified
+		// these are here so that they are computed beforehand to avoid expensive allocation in hot loop
+		std::string threshold_name {};
+		std::string morphology_name {};
 
 		// name of the template file
 		// will try and open the template file in the passed in template directory
@@ -124,9 +130,6 @@ class TargetSearchData {
 		std::vector<cv::Point> template_contour {};
 		double template_area_frac { 0.0 };
 		double template_aspect_ratio { 0.0 };
-	
-	private:
-		std::string m_name {};
 };
 
 // TODO: use correct display names for when display flag is true
@@ -165,13 +168,12 @@ class Vision {
 		std::vector<TargetSearchData> m_target_data {
 			TargetSearchData(
 				TargetType::RedBall,
+				"Red Ball",
 				"red-ball-template.png",
-				// observed min: H: 324.7, S: 47.9, V: 61.3
-				// observed max: H: 336.5, S: 69.1, V: 90.7
-				//cv::Scalar(162, 122, 156),
-				//cv::Scalar(169, 177, 232),
-				cv::Scalar(130, 122, 156),
-				cv::Scalar(140, 177, 232),
+				// observed min: H: 130, S: 80, V: 132
+				// observed max: H: 142, S: 182, V: 243
+ 				cv::Scalar(130, 75, 127),
+				cv::Scalar(142, 187, 248),
 				1.5,
 				ScoreWeights {
 					.contour_match = 1.0,
@@ -180,11 +182,12 @@ class Vision {
 			),
 			TargetSearchData(
 				TargetType::BlueBall,
+				"Blue Ball",
 				"blue-ball-template.png",
-				// observed min: H: 201.9 S: 69.2 V: 64.6
-				// observed max: H: 213.3, S: 82.2, V: 96.2
-				cv::Scalar(100, 176, 164),
-				cv::Scalar(107, 210, 246),
+				// observed min: H: 12, S: 165, V: 145
+				// observed max: H: 20, S: 221, V: 250
+				cv::Scalar(12, 160, 140),
+				cv::Scalar(20, 226, 255),
 				1.5,
 				ScoreWeights {
 					.contour_match = 1.0,
