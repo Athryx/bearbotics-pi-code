@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
 	auto file_name = program.get<std::optional<std::string>>("--camera");
 	VisionCamera camera(std::move(file_name), image_width, image_height, max_fps);
 
-	Vision vis(threads, display_flag);
+	Vision vis(fov, threads, display_flag);
 	auto template_dir = program.get("template-dir");
 	auto template_res = vis.process_templates(template_dir);
 	if (template_res.is_err()) {
