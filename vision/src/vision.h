@@ -105,6 +105,13 @@ class TargetSearchData {
 		std::string template_name;
 
 		// minimum and maximum hsv values for threshholding this object
+		// from https://docs.opencv.org/3.4/de/d25/imgproc_color_conversions.html
+		// NOTE: if input image is 8 bit rgb, the min and max values for h, s, and v area as follows:
+		// H: 180
+		// S: 255
+		// V: 255
+		// This is different from the normal H: 360, S: 100, V: 100 readings you will normally see,
+		// so be sure to scale these values to be in the correct range
 		cv::Scalar thresh_min;
 		cv::Scalar thresh_max;
 
@@ -158,9 +165,13 @@ class Vision {
 		std::vector<TargetSearchData> m_target_data {
 			TargetSearchData(
 				TargetType::RedBall,
-				"red-ball-template.jpg",
-				cv::Scalar(10, 70, 70),
-				cv::Scalar(40, 255, 255),
+				"red-ball-template.png",
+				// observed min: H: 324.7, S: 47.9, V: 61.3
+				// observed max: H: 336.5, S: 69.1, V: 90.7
+				//cv::Scalar(162, 122, 156),
+				//cv::Scalar(169, 177, 232),
+				cv::Scalar(130, 122, 156),
+				cv::Scalar(140, 177, 232),
 				1.5,
 				ScoreWeights {
 					.contour_match = 1.0,
@@ -169,9 +180,11 @@ class Vision {
 			),
 			TargetSearchData(
 				TargetType::BlueBall,
-				"blue-ball-template.jpg",
-				cv::Scalar(10, 70, 70),
-				cv::Scalar(40, 255, 255),
+				"blue-ball-template.png",
+				// observed min: H: 201.9 S: 69.2 V: 64.6
+				// observed max: H: 213.3, S: 82.2, V: 96.2
+				cv::Scalar(100, 176, 164),
+				cv::Scalar(107, 210, 246),
 				1.5,
 				ScoreWeights {
 					.contour_match = 1.0,

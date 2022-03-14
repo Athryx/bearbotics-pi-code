@@ -2,6 +2,7 @@
 #include "vision.h"
 #include "util.h"
 #include "parallel.h"
+#include "logging.h"
 #include <math.h>
 #include <opencv2/imgproc.hpp>
 
@@ -135,15 +136,23 @@ Error Vision::process_templates(const std::string& template_directory) {
 			return Error::resource_unavailable("could not open template file: " + template_file);
 		}
 
-		cv::cvtColor(img_template, img_template, cv::COLOR_BGR2HSV, 8);
+		// TODO: find a way to configure what type of colorspace image is input
+		show_wait("tmp", img_template);
+		cv::cvtColor(img_template, img_template, cv::COLOR_RGB2HSV);
+		show_wait("tmp", img_template);
 		cv::inRange(img_template, target_data.thresh_min, target_data.thresh_max, img_template);
+		show_wait("tmp", img_template);
 		// TODO: pass kernel into morphologyEx instead of plain cv::Mat()
 		cv::morphologyEx(img_template, img_template, cv::MORPH_OPEN, cv::Mat());
 
 		std::vector<std::vector<cv::Point>> contours;
 		cv::findContours(img_template, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
 
-		show_wait("Template ", img_template);
+		if (contours.size() == 0) {
+			lg::critical("could not find any contours in the template image");
+		}
+
+		show_wait(target_data.template_name, img_template);
 
 		// find largest contour
 		usize index = 0;
@@ -177,7 +186,7 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 
 		show("Input", img);
 
-		// TODO: figure out type of BGR mat
+		// TODO: find a way to configure what type of colorspace image is input
 		cv::Mat img_hsv(size, img.type());
 		time("HSV conversion", [&] () {
 			task(img, img_hsv, [] (cv::Mat in, cv::Mat out) {

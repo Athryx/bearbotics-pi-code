@@ -8,8 +8,6 @@ find_package(OpenCV REQUIRED)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 
-message(STATUS ${GSTREAMER_INCLUDE_DIRS})
-
 include_directories(
 	${OpenCV_INCLUDE_DIRS}
 	${GLIB_INCLUDE_DIRS}
@@ -22,4 +20,4 @@ link_directories(
 )
 
 add_executable(Vision main.cpp util.cpp vision.cpp parallel.cpp remote_viewing.cpp mqtt.cpp logging.cpp error.cpp)
-target_link_libraries(Vision mosquitto ${OpenCV_LIBS} ${GSTREAMER_LIBRARIES} ${GLIV_LIBRARIES})
+target_link_libraries(Vision mosquitto ${OpenCV_LIBS} ${GSTREAMER_LIBRARIES} ${GLIB_LIBRARIES})
