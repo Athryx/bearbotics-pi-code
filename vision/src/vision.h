@@ -85,12 +85,13 @@ struct IntermediateTarget {
 struct ScoreWeights {
 	double contour_match;
 	double area_frac;
+	double aspect_ratio;
 };
 
 // data about a desired type of target used to help recognise it
 class TargetSearchData {
 	public:
-		TargetSearchData(TargetType target_type, std::string&& name, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
+		TargetSearchData(TargetType target_type, std::string&& name, cv::Scalar bounding_box_color, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
 
 		// returns true if this is the passed in target type
 		bool is(TargetType type) const;
@@ -108,6 +109,9 @@ class TargetSearchData {
 		std::string morphology_name {};
 		std::string contour_name {};
 		std::string matching_name {};
+
+		// color to use when displaying the bounding box
+		cv::Scalar bounding_box_color;
 
 		// name of the template file
 		// will try and open the template file in the passed in template directory
@@ -132,7 +136,7 @@ class TargetSearchData {
 		// template contour to try and recognise
 		std::vector<cv::Point> template_contour {};
 		double template_area_frac { 0.0 };
-		double template_aspect_ratio { 0.0 };
+		double template_aspect_ratio_scaled { 0.0 };
 };
 
 // TODO: use correct display names for when display flag is true
@@ -172,6 +176,8 @@ class Vision {
 			TargetSearchData(
 				TargetType::RedBall,
 				"Red Ball",
+				// this is in bgr
+				cv::Scalar(0, 0, 255),
 				"red-ball-template.png",
 				// observed min: H: 130, S: 80, V: 132
 				// observed max: H: 142, S: 182, V: 243
@@ -181,11 +187,14 @@ class Vision {
 				ScoreWeights {
 					.contour_match = 1.0,
 					.area_frac = 1.0,
+					.aspect_ratio = 1.0,
 				}
 			),
 			TargetSearchData(
 				TargetType::BlueBall,
 				"Blue Ball",
+				// this is in bgr
+				cv::Scalar(255, 0, 0),
 				"blue-ball-template.png",
 				// observed min: H: 12, S: 165, V: 145
 				// observed max: H: 20, S: 221, V: 250
@@ -195,6 +204,7 @@ class Vision {
 				ScoreWeights {
 					.contour_match = 1.0,
 					.area_frac = 1.0,
+					.aspect_ratio = 1.0,
 				}
 			),
 		};

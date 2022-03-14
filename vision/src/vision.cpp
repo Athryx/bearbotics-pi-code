@@ -3,6 +3,7 @@
 #include "util.h"
 #include "parallel.h"
 #include "logging.h"
+#include <cmath>
 #include <math.h>
 #include <opencv2/imgproc.hpp>
 
@@ -89,9 +90,10 @@ std::optional<std::string_view> target_type_to_string(TargetType type) {
 }
 
 
-TargetSearchData::TargetSearchData(TargetType target_type, std::string&& in_name, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
+TargetSearchData::TargetSearchData(TargetType target_type, std::string&& in_name, cv::Scalar bounding_box_color, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
 target_type(target_type),
 name(std::move(in_name)),
+bounding_box_color(bounding_box_color),
 template_name(std::move(template_name)),
 thresh_min(thresh_min),
 thresh_max(thresh_max),
@@ -161,7 +163,7 @@ Error Vision::process_templates(const std::string& template_directory) {
 		auto bounding_box = cv::boundingRect(target_data.template_contour);
 		target_data.template_contour.swap(contours[index]);
 		target_data.template_area_frac = max_area / bounding_box.area();
-		target_data.template_aspect_ratio = (double) bounding_box.width / (double) bounding_box.height;
+		target_data.template_aspect_ratio_scaled = log2((double) bounding_box.width / (double) bounding_box.height);
 	}
 
 	return Error::ok();
@@ -169,6 +171,14 @@ Error Vision::process_templates(const std::string& template_directory) {
 
 std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 	std::vector<Target> out;
+
+	// image that will be used to show all found targets of all types
+	cv::Mat img_show;
+	std::cout << img_show.empty() << std::endl;
+	if (m_display) {
+		// only copy the data if display flag is set
+		img_show = img.clone();
+	}
 
 	show("Input", img);
 
@@ -224,11 +234,14 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 				// compute fraction of bounding rectangle taken up by the actual contour
 				double area_frac = cv::contourArea(target.contour) / target.bounding_box.area();
 				// TODO: add a per target way to configure k
-				double score = similarity(area_frac, target_data.template_area_frac, 70.0);
-				target.score += score * target_data.weights.area_frac;
+				double frac_score = similarity(area_frac, target_data.template_area_frac, 70.0);
+				target.score += frac_score * target_data.weights.area_frac;
 
-				// TODO figure out how to linearlize this
 				double aspect_ratio = (double) target.bounding_box.width / (double) target.bounding_box.height;
+				// make it so that doubling the aspec ratio results in a constant increase in score
+				double scaled_ratio = std::log2(aspect_ratio);
+				double aspect_score = similarity(scaled_ratio, target_data.template_aspect_ratio_scaled, 100.0);
+				target.score += aspect_ratio * target_data.weights.aspect_ratio;
 			}
 		});
 
@@ -237,48 +250,35 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 		double font_scale = 0.5;
 		cv::Point text_point(40, 40);
 
-		/*if (best_match == INFINITY) {
-			if (m_display) {
-				auto img_show = img.clone();
-
-				cv::putText(img_show, "match: none", text_point, font_face, font_scale, cv::Scalar(0, 0, 255));
-				text_point.y += 15;
-				cv::putText(img_show, "distance: unknown", text_point, font_face, font_scale, cv::Scalar(0, 0, 255));
-				text_point.y += 15;
-				cv::putText(img_show, "angle: unknown", text_point, font_face, font_scale, cv::Scalar(0, 0, 255));
-
-				cv::imshow("Contours", img_show);
+		for (const auto& target : targets) {
+			// ignore targets that didn't score well enough
+			if (target.score < target_data.min_score) {
+				continue;
 			}
-			return {};
-		}*/
 
-		for (auto& target : targets) {
-			auto rect = target.bounding_box;
-			/*Target target;
-			target.distance = 11386.95362494479 * (1.0 / rect.width);
+			/*target.distance = 11386.95362494479 * (1.0 / rect.width);
 			auto xpos = rect.x + rect.width / 2;
 			target.angle = atan((xpos - 320) / 530.47) * (180.0 / M_PI) + 16;*/
-	
+			// TODO: calculate distance
+			auto out_target = Target {
+				.type = target_data.target_type,
+				.distance = 0.0,
+				.angle = 0.0,
+				.score = target.score,
+			};
+
+			out.push_back(out_target);
+
 			if (m_display) {
-				auto img_show = img.clone();
-	
-				// FIXME: find a better way to do this
+				auto rect = target.bounding_box;
+				// TODO: display distance, angle, and score for each target
 				cv::drawContours(img_show, std::vector<std::vector<cv::Point>>(1, target.contour), 0, cv::Scalar(0, 0, 255));
-				cv::rectangle(img_show, rect, cv::Scalar(0, 255, 0));
-	
-				snprintf(text, 32, "match: %6.2f", target.score);
-				cv::putText(img_show, text, text_point, font_face, font_scale, cv::Scalar(0, 0, 255));
-				text_point.y += 15;
-				/*snprintf(text, 32, "distance: %6.2f", target.distance);
-				cv::putText(img_show, text, text_point, font_face, font_scale, cv::Scalar(0, 0, 255));
-				text_point.y += 15;
-				snprintf(text, 32, "angle: %6.2f", target.angle);
-				cv::putText(img_show, text, text_point, font_face, font_scale, cv::Scalar(0, 0, 255));*/
-	
-				cv::imshow("Contours", img_show);
+				cv::rectangle(img_show, rect, target_data.bounding_box_color);
 			}
 		}
 	}
+
+	show("Targets", img_show);
 
 	return out;
 }
