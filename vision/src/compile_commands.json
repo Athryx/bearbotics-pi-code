@@ -1,27 +1,42 @@
 [
 {
   "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
-  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/Vision.dir/main.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/main.cpp",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/main.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/main.cpp",
   "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/main.cpp"
 },
 {
   "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
-  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/Vision.dir/util.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/util.cpp",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/util.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/util.cpp",
   "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/util.cpp"
 },
 {
   "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
-  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/Vision.dir/vision.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/vision.cpp",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/vision.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/vision.cpp",
   "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/vision.cpp"
 },
 {
   "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
-  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/Vision.dir/parallel.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/parallel.cpp",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/parallel.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/parallel.cpp",
   "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/parallel.cpp"
 },
 {
   "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
-  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -isystem /usr/include/opencv4 -std=gnu++17 -o CMakeFiles/Vision.dir/remote_viewing.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/remote_viewing.cpp",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/remote_viewing.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/remote_viewing.cpp",
   "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/remote_viewing.cpp"
+},
+{
+  "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/mqtt.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/mqtt.cpp",
+  "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/mqtt.cpp"
+},
+{
+  "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/logging.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/logging.cpp",
+  "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/logging.cpp"
+},
+{
+  "directory": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/build",
+  "command": "/usr/bin/c++  -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I/usr/include/sysprof-4 -I/usr/include/gstreamer-1.0 -I/home/jack/projects/frc/bearbotics-pi-code/vision/src/../include -isystem /usr/include/opencv4 -std=gnu++20 -o CMakeFiles/Vision.dir/error.cpp.o -c /home/jack/projects/frc/bearbotics-pi-code/vision/src/error.cpp",
+  "file": "/home/jack/projects/frc/bearbotics-pi-code/vision/src/error.cpp"
 }
 ]

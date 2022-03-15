@@ -81,6 +81,25 @@ struct IntermediateTarget {
 	double score { 0.0 };
 };
 
+// paramaters for various stages in the vision pipeline
+struct PipelineParams {
+	// minimum and maximum hsv values for threshholding this object
+	// from https://docs.opencv.org/3.4/de/d25/imgproc_color_conversions.html
+	// NOTE: if input image is 8 bit rgb, the min and max values for h, s, and v area as follows:
+	// H: 180
+	// S: 255
+	// V: 255
+	// This is different from the normal H: 360, S: 100, V: 100 readings you will normally see,
+	// so be sure to scale these values to be in the correct range
+	cv::Scalar thresh_min;
+	cv::Scalar thresh_max;
+
+	// TODO: add morphology amount configuration
+
+	// height of the target, used for distance calculations
+	double target_height;
+};
+
 // weights for the scores of different operations to determine how closely the imsage matches the template
 struct ScoreWeights {
 	double contour_match;
@@ -91,7 +110,7 @@ struct ScoreWeights {
 // data about a desired type of target used to help recognise it
 class TargetSearchData {
 	public:
-		TargetSearchData(TargetType target_type, std::string&& name, cv::Scalar bounding_box_color, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights);
+		TargetSearchData(TargetType target_type, std::string&& name, cv::Scalar bounding_box_color, std::string&& template_name, PipelineParams params, double min_score, ScoreWeights weights);
 
 		// returns true if this is the passed in target type
 		bool is(TargetType type) const;
@@ -117,16 +136,8 @@ class TargetSearchData {
 		// will try and open the template file in the passed in template directory
 		std::string template_name;
 
-		// minimum and maximum hsv values for threshholding this object
-		// from https://docs.opencv.org/3.4/de/d25/imgproc_color_conversions.html
-		// NOTE: if input image is 8 bit rgb, the min and max values for h, s, and v area as follows:
-		// H: 180
-		// S: 255
-		// V: 255
-		// This is different from the normal H: 360, S: 100, V: 100 readings you will normally see,
-		// so be sure to scale these values to be in the correct range
-		cv::Scalar thresh_min;
-		cv::Scalar thresh_max;
+		// paramaters for the vision pipeline
+		PipelineParams params;
 
 		// minumum score a controut must have to be considered a valid target
 		double min_score;
@@ -182,10 +193,13 @@ class Vision {
 				// this is in bgr
 				cv::Scalar(0, 0, 255),
 				"red-ball-template.png",
-				// observed min: H: 130, S: 80, V: 132
-				// observed max: H: 142, S: 182, V: 243
- 				cv::Scalar(130, 75, 127),
-				cv::Scalar(142, 187, 248),
+				PipelineParams {
+					// observed min: H: 130, S: 80, V: 132
+					// observed max: H: 142, S: 182, V: 243
+					.thresh_min = cv::Scalar(130, 75, 127),
+					.thresh_max = cv::Scalar(142, 187, 248),
+					.target_height = 1.0,
+				},
 				1.5,
 				ScoreWeights {
 					.contour_match = 1.0,
@@ -199,10 +213,13 @@ class Vision {
 				// this is in bgr
 				cv::Scalar(255, 0, 0),
 				"blue-ball-template.png",
-				// observed min: H: 12, S: 165, V: 145
-				// observed max: H: 20, S: 221, V: 250
-				cv::Scalar(12, 160, 140),
-				cv::Scalar(20, 226, 255),
+				PipelineParams {
+					// observed min: H: 12, S: 165, V: 145
+					// observed max: H: 20, S: 221, V: 250
+					.thresh_min = cv::Scalar(12, 160, 140),
+					.thresh_max = cv::Scalar(20, 226, 255),
+					.target_height = 1.0,
+				},
 				1.5,
 				ScoreWeights {
 					.contour_match = 1.0,

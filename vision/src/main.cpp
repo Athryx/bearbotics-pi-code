@@ -439,8 +439,8 @@ int main(int argc, char **argv) {
 				total_time += elapsed_time;
 				frames ++;
 
-				printf("instantaneous fps: %ld\n", std::min(1000000 / elapsed_time, max_fps));
-				printf("average fps: %ld\n", std::min(1000000 * frames / total_time, max_fps));
+				lg::info("instantaneous fps: %ld", std::min(1000000 / elapsed_time, max_fps));
+				lg::info("average fps: %ld", std::min(1000000 * frames / total_time, max_fps));
 
 				printf("\n");
 

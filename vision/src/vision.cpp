@@ -90,13 +90,12 @@ std::optional<std::string_view> target_type_to_string(TargetType type) {
 }
 
 
-TargetSearchData::TargetSearchData(TargetType target_type, std::string&& in_name, cv::Scalar bounding_box_color, std::string&& template_name, cv::Scalar thresh_min, cv::Scalar thresh_max, double min_score, ScoreWeights weights):
+TargetSearchData::TargetSearchData(TargetType target_type, std::string&& in_name, cv::Scalar bounding_box_color, std::string&& template_name, PipelineParams params, double min_score, ScoreWeights weights):
 target_type(target_type),
 name(std::move(in_name)),
 bounding_box_color(bounding_box_color),
 template_name(std::move(template_name)),
-thresh_min(thresh_min),
-thresh_max(thresh_max),
+params(params),
 min_score(min_score),
 weights(weights) {
 	hsv_name = name + " HSV Conversion";
@@ -137,7 +136,7 @@ Error Vision::process_templates(const std::string& template_directory) {
 
 		// TODO: find a way to configure what type of colorspace image is input
 		cv::cvtColor(img_template, img_template, cv::COLOR_RGB2HSV);
-		cv::inRange(img_template, target_data.thresh_min, target_data.thresh_max, img_template);
+		cv::inRange(img_template, target_data.params.thresh_min, target_data.params.thresh_max, img_template);
 		// TODO: pass kernel into morphologyEx instead of plain cv::Mat()
 		cv::morphologyEx(img_template, img_template, cv::MORPH_OPEN, cv::Mat());
 
@@ -183,6 +182,19 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 
 	show("Input", img);
 
+	// values used for distance calulation that only need to be calculated once
+	// TODO: don't calculate these every frame
+	double img_width = img.size().width;
+	double img_height = img.size().height;
+
+	double fovx = m_fov;
+	double fovy = fovx * img_width / img_height;
+
+	// slope of field of view line
+	double fov_slope = tan(fovy);
+	// height of the entire camera frame at a distance of 1m
+	double frame_height = 2.0 * fov_slope;
+
 	for (const auto& target_data : m_target_data) {
 		if (!target_data.is(type)) {
 			continue;
@@ -201,7 +213,7 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 		cv::Mat img_thresh(size, CV_8U);
 		time(target_data.threshold_name.c_str(), [&] () {
 			task(img_hsv, img_thresh, [&] (cv::Mat in, cv::Mat out) {
-				cv::inRange(in, target_data.thresh_min, target_data.thresh_max, out);
+				cv::inRange(in, target_data.params.thresh_min, target_data.params.thresh_max, out);
 			});
 		});
 		show(target_data.threshold_name, img_thresh);
@@ -257,15 +269,31 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 				continue;
 			}
 
-			double fovx = m_fov;
-			double fovy = fovx /* height / width */;
-			/*target.distance = 11386.95362494479 * (1.0 / rect.width);
-			auto xpos = rect.x + rect.width / 2;
-			target.angle = atan((xpos - 320) / 530.47) * (180.0 / M_PI) + 16;*/
-			// TODO: calculate distance
+			auto rect = target.bounding_box;
+			double xpos = rect.x + rect.width / 2.0;
+			// TODO: figure out if top is 0 y or bottom is 0 y
+			double ypos = rect.y + rect.height / 2.0;
+
+			// converts xpos and ypos to be in the range -1.0 to 1.0
+			double xpos_normalized = (xpos - img_width / 2.0) * (2.0 / img_width);
+			double ypos_normalized = (ypos - img_height / 2.0) * (2.0 / img_height);
+
+			// calculate angle of target in degrees
+			double xangle = xpos_normalized * fovx;
+			double yangle = ypos_normalized * fovy;
+
+			// calculate expected height of target at 1m distance based on target_height and fovy
+			// fraction of the frame the target would take up at 1m distance
+			double height_fraction_1m = target_data.params.target_height / frame_height;
+			// the actual fraction of the frame that the object's height takes up
+			double height_fraction = rect.height / frame_height;
+			double distance = height_fraction_1m / height_fraction;
+
+			// TODO: calculate angle
+			// TODO: account for camera position and angle
 			auto out_target = Target {
 				.type = target_data.target_type,
-				.distance = 0.0,
+				.distance = distance,
 				.angle = 0.0,
 				.score = target.score,
 			};
@@ -273,7 +301,6 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 			out.push_back(out_target);
 
 			if (m_display) {
-				auto rect = target.bounding_box;
 				// TODO: display distance, angle, and score for each target
 				cv::drawContours(img_show, std::vector<std::vector<cv::Point>>(1, target.contour), 0, cv::Scalar(0, 0, 255));
 				cv::rectangle(img_show, rect, target_data.bounding_box_color);
