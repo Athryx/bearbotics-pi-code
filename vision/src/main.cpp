@@ -356,9 +356,9 @@ int main(int argc, char **argv) {
 	}
 
 
-	const usize msg_len = 32;
-	char msg[msg_len];
-	memset(msg, 0, msg_len);
+	constexpr usize msg_buf_len = 2048;
+	char msg_buf[msg_buf_len];
+	memset(msg_buf, 0, msg_buf_len);
 
 	long total_time = 0;
 	long frames = 0;
@@ -445,17 +445,26 @@ int main(int argc, char **argv) {
 				printf("\n");
 
 				if (mqtt_flag) {
-					/*if (target.has_value()) {
-						snprintf(msg, msg_len, "1 %6.2f %6.2f", target->distance, target->angle);
-					} else {
-						snprintf(msg, msg_len, "0 %6.2f %6.2f", 0.0f, 0.0f);
+					// true if serialization succeeded
+					bool serialize_good = true;
+
+					usize i = 0;
+					for (auto& target : targets) {
+						char *ptr = msg_buf + i;
+						usize n = msg_buf_len - i;
+						int result = snprintf(ptr, n, "%d %f %f %f", (int) target.type, target.distance, target.angle, target.score);
+						if (result < 0 || result >= n) {
+							serialize_good = false;
+							lg::error("targets could not fit in mqtt send buffer, skipping sending data");
+							break;
+						}
 					}
 
 					// TODO: reduce amount of allocations for string
-					auto result = mqtt_client->publish(mqtt_topic, std::string(msg));
+					auto result = mqtt_client->publish(mqtt_topic, std::string(msg_buf));
 					if (result.is_err()) {
 						lg::error("could not publish vision data to mqtt: %s", result.to_string().c_str());
-					}*/
+					}
 				}
 				break;
 			}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logging.h"
 #include <functional>
 #include <stdio.h>
 #include <string>
@@ -21,7 +22,7 @@ T time(const char *op_name, std::function<T ()> op, long *out_time = nullptr) {
 	long new_usec = get_usec();
 	long elapsed_usec = new_usec - old_usec;
 
-	printf("%s elapsed time: %ld usec\n", op_name, elapsed_usec);
+	lg::info("%s elapsed time: %ld usec", op_name, elapsed_usec);
 	if (out_time != nullptr) *out_time = elapsed_usec;
 	return ret;
 }

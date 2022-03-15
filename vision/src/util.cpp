@@ -1,4 +1,5 @@
 #include "util.h"
+#include "logging.h"
 #include <sys/time.h>
 
 // gets microseconds since unix epoch
@@ -14,6 +15,6 @@ void time(const char *op_name, std::function<void ()> op, long *out_time) {
 	long new_usec = get_usec();
 	long elapsed_usec = new_usec - old_usec;
 
-	printf("%s elapsed time: %ld usec\n", op_name, elapsed_usec);
+	lg::info("%s elapsed time: %ld usec", op_name, elapsed_usec);
 	if (out_time != nullptr) *out_time = elapsed_usec;
 }
