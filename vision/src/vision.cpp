@@ -174,7 +174,6 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 
 	// image that will be used to show all found targets of all types
 	cv::Mat img_show;
-	std::cout << img_show.empty() << std::endl;
 	if (m_display) {
 		// only copy the data if display flag is set
 		img_show = img.clone();

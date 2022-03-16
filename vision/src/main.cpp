@@ -43,7 +43,6 @@ const char* mode_to_string(Mode mode) {
 }
 
 // TODO: modify argparse to allow overiding default represented value string
-// TODO: allow setting what to log
 argparse::ArgumentParser parse_args(int argc, char **argv) {
 	argparse::ArgumentParser program("vision", "0.1.0");
 
@@ -54,8 +53,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 			int level;
 			std::istringstream iss(str);
 
-			iss >> level;
-			if (!iss.good()) {
+			if ((iss >> level).fail() || !(iss >> std::ws).eof()) {
 				throw std::runtime_error("must pass number to --log-level");
 			}
 
@@ -440,9 +438,7 @@ int main(int argc, char **argv) {
 				frames ++;
 
 				lg::info("instantaneous fps: %ld", std::min(1000000 / elapsed_time, max_fps));
-				lg::info("average fps: %ld", std::min(1000000 * frames / total_time, max_fps));
-
-				printf("\n");
+				lg::info("average fps: %ld\n", std::min(1000000 * frames / total_time, max_fps));
 
 				if (mqtt_flag) {
 					// true if serialization succeeded
