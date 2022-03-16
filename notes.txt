@@ -1,0 +1,7 @@
+For competition, it is probably best to stop xorg from running.
+To do this, edit the file /boot/config.txt, and change the line
+hdmi_force_hotplug=1
+to
+hdmi_force_hotplug=0
+or comment it our.
+see https://www.shellhacks.com/raspberry-pi-force-hdmi-hotplug/

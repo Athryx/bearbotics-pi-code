@@ -81,8 +81,8 @@ Error MqttClient::update() {
 	}
 }
 
-Error MqttClient::publish(const std::string& topic, const std::string &payload) {
-	switch(mosquitto_publish(m_client, nullptr, topic.c_str(), payload.length(), payload.c_str(), 0, false)) {
+Error MqttClient::publish(const std::string& topic, std::string_view payload) {
+	switch(mosquitto_publish(m_client, nullptr, topic.c_str(), payload.length(), payload.data(), 0, false)) {
 		case MOSQ_ERR_SUCCESS:
 			return Error::ok();
 		case MOSQ_ERR_INVAL:
