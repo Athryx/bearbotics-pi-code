@@ -46,6 +46,7 @@ const char* mode_to_string(Mode mode) {
 argparse::ArgumentParser parse_args(int argc, char **argv) {
 	argparse::ArgumentParser program("vision", "0.1.0");
 
+	// TODO: do this to parse numbers for all other options
 	program.add_argument("-l", "--log-level")
 		.help("how much to log: 0: nothing, 1: ciritical, 2: errors, 3: warnings, 4: info")
 		.default_value(4)
@@ -122,7 +123,6 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		});
 
 
-	// TODO: make fps setting apply to remote viewing or add seperate settings for remote viewing
 	program.add_argument("-f", "--fps")
 		.help("maximum frames per second")
 		.default_value(120)
@@ -340,7 +340,7 @@ int main(int argc, char **argv) {
 
 	const auto rtp_host = program.get("--rtp-host");
 	const auto rtp_port = program.get<int>("--rtp-port");
-	RemoteViewing remote_viewing(rtp_host, rtp_port, cam_width, cam_height, image_width, image_height);
+	RemoteViewing remote_viewing(rtp_host, rtp_port, cam_width, cam_height, image_width, image_height, max_fps);
 
 
 	auto file_name = program.get<std::optional<std::string>>("--camera");
@@ -456,7 +456,6 @@ int main(int argc, char **argv) {
 						}
 					}
 
-					// TODO: reduce amount of allocations for string
 					auto result = mqtt_client->publish(mqtt_topic, std::string(msg_buf));
 					if (result.is_err()) {
 						lg::error("could not publish vision data to mqtt: %s", result.to_string().c_str());

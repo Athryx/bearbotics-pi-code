@@ -288,12 +288,11 @@ std::vector<Target> Vision::process(cv::Mat img, TargetType type) const {
 			double height_fraction = rect.height / frame_height;
 			double distance = height_fraction_1m / height_fraction;
 
-			// TODO: calculate angle
 			// TODO: account for camera position and angle
 			auto out_target = Target {
 				.type = target_data.target_type,
 				.distance = distance,
-				.angle = 0.0,
+				.angle = xangle,
 				.score = target.score,
 			};
 

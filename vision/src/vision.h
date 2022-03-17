@@ -150,7 +150,6 @@ class TargetSearchData {
 		double template_aspect_ratio_scaled { 0.0 };
 };
 
-// TODO: use correct display names for when display flag is true
 class Vision {
 	public:
 		// field of view is field of view of camera, it doesn't matter for the template images

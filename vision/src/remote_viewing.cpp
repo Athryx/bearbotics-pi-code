@@ -7,13 +7,13 @@
 #include "logging.h"
 
 // XXX: this will fail and exit the program if something goes wrong
-RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width, int input_height, int processing_width, int processing_height) {
+RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width, int input_height, int processing_width, int processing_height, int fps) {
 	// TODO: set these properties without using parse_luanch
 	// Read the video in at 1920x1080 and then scale it, becuase rading it in at a lower resolution
 	// will reduce the field of view on the raspberry pi camera that we have
 	// TODO: make the resolution we read in from the camera configurable
 	auto pipeline_description = "v4l2src device=\"/dev/video0\""
-		" ! video/x-raw,width=" + std::to_string(input_width) + ",height=" + std::to_string(input_height) +
+		" ! video/x-raw,width=" + std::to_string(input_width) + ",height=" + std::to_string(input_height) + ",framerate=" + std::to_string(fps) + "/1"
 		" ! videoscale ! video/x-raw,width=" + std::to_string(processing_width) + ",height=" + std::to_string(processing_height) +
 		" ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
 		" ! rtph264pay config-interval=10 pt=96 ! udpsink host=" + host + " port=" + std::to_string(port);
