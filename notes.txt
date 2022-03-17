@@ -5,3 +5,9 @@ to
 hdmi_force_hotplug=0
 or comment it our.
 see https://www.shellhacks.com/raspberry-pi-force-hdmi-hotplug/
+
+to auto start vision on the pi at boot, edit the file /etc/rc.local
+this is a shell script run at boot
+add:
+/path/to/start-vision.sh &
+to run the vision startup script in a seperate process
