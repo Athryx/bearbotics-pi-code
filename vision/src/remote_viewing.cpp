@@ -68,7 +68,7 @@ Error RemoteViewing::start() {
 	} else {
 		return Error::ok();
 	}*/
-	g_main_loop_run(m_loop);
+	m_loop_runner_thread = std::thread(g_main_loop_run, m_loop);
 	return Error::ok();
 }
 

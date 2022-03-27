@@ -3,6 +3,8 @@
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server-object.h>
 #include <string>
+#include <thread>
+#include <optional>
 #include "types.h"
 #include "error.h"
 
@@ -18,8 +20,11 @@ class RemoteViewing {
 
 		// TODO: move logging from here into main.cpp
 		Error update();
-	
+
 	private:
+		// thread that runs the g main loop
+		std::optional<std::thread> m_loop_runner_thread {};
+
 		GMainLoop *m_loop;
 		GstElement *m_pipeline;
 		GstBus *m_bus;
