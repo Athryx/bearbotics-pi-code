@@ -66,11 +66,6 @@ RemoteViewing::~RemoteViewing() {
 }
 
 Error RemoteViewing::start() {
-	/*if (gst_element_set_state(m_pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-		return Error::library("could not start remote viewing");
-	} else {
-		return Error::ok();
-	}*/
 	if (m_loop_runner_thread.has_value()) {
 		return Error::invalid_operation("could not start remote viewing, it is already running");
 	} else {
@@ -80,14 +75,10 @@ Error RemoteViewing::start() {
 }
 
 Error RemoteViewing::stop() {
-	/*if (gst_element_set_state(m_pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
-		return Error::library("could not stop remote viewing");
-	} else {
-		return Error::ok();
-	}*/
 	if (m_loop_runner_thread.has_value()) {
-		m_loop_runner_thread->detach();
 		g_main_loop_quit(m_loop);
+		// wait for thread to stop, at this point camera is available for vision
+		m_loop_runner_thread->join();
 		m_loop_runner_thread = {};
 		return Error::ok();
 	} else {
