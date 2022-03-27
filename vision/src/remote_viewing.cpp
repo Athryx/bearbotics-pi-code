@@ -34,7 +34,7 @@ RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width,
 
 	m_server = gst_rtsp_server_new();
 	// set port of server
-	//g_object_set(m_server, "service", port, nullptr);
+	g_object_set(m_server, "service", std::to_string(port).c_str(), nullptr);
 
 	GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(m_server);
 
