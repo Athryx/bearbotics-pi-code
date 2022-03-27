@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gst/gst.h>
+#include <gst/rtsp-server/rtsp-server-object.h>
 #include <string>
 #include "types.h"
 #include "error.h"
@@ -19,6 +20,8 @@ class RemoteViewing {
 		Error update();
 	
 	private:
+		GMainLoop *m_loop;
 		GstElement *m_pipeline;
 		GstBus *m_bus;
+		GstRTSPServer *m_server;
 };

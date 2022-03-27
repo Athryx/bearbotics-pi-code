@@ -1,5 +1,7 @@
 #include "remote_viewing.h"
 #include <gst/gst.h>
+#include <gst/rtsp-server/rtsp-server.h>
+#include <gst/rtsp-server/rtsp-server-object.h>
 #include "util.h"
 #include <assert.h>
 #include <string>
@@ -8,44 +10,80 @@
 
 // XXX: this will fail and exit the program if something goes wrong
 RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width, int input_height, int processing_width, int processing_height, int fps) {
+	// use default context for main loop
+	m_loop = g_main_loop_new(nullptr, false);
+
 	// TODO: set these properties without using parse_luanch
 	// Read the video in at 1920x1080 and then scale it, becuase rading it in at a lower resolution
 	// will reduce the field of view on the raspberry pi camera that we have
-	// TODO: make the resolution we read in from the camera configurable
-	auto pipeline_description = "v4l2src device=\"/dev/video0\""
+	auto pipeline_description = "( v4l2src device=\"/dev/video0\""
 		" ! video/x-raw,width=" + std::to_string(input_width) + ",height=" + std::to_string(input_height) + ",framerate=" + std::to_string(fps) + "/1"
-		" ! videoscale ! video/x-raw,width=" + std::to_string(processing_width) + ",height=" + std::to_string(processing_height) +
+		" ! videoscale ! video/x-raw,width=" + std::to_string(processing_width) + ",height=" + std::to_string(processing_height) + ",framerate=" + std::to_string(fps) + "/1"
 		" ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
-		" ! rtph264pay config-interval=10 pt=96 ! udpsink host=" + host + " port=" + std::to_string(port);
+		" ! rtph264pay name=pay0 pt=96 )";
 
-	m_pipeline = gst_parse_launch(pipeline_description.c_str(), nullptr);
+	/*GstElement *pipeline = gst_parse_launch(pipeline_description.c_str(), nullptr);
 	assert(m_pipeline != nullptr);
 
 	m_bus = gst_element_get_bus(m_pipeline);
 
 	// NOTE: this might be the starting state, so this might be unnesessary
 	auto state = gst_element_set_state(m_pipeline, GST_STATE_NULL);
-	assert(state != GST_STATE_CHANGE_FAILURE);
+	assert(state != GST_STATE_CHANGE_FAILURE);*/
+
+
+	m_server = gst_rtsp_server_new();
+	// set port of server
+	//g_object_set(m_server, "service", port, nullptr);
+
+	GstRTSPMountPoints *mounts = gst_rtsp_server_get_mount_points(m_server);
+
+	GstRTSPMediaFactory *factory = gst_rtsp_media_factory_new();
+	// pipeline should return a GstBin, which is what the parenthasees for the pipeline description are
+	gst_rtsp_media_factory_set_launch(factory, pipeline_description.c_str());
+	// stream can be shared across network
+	gst_rtsp_media_factory_set_shared(factory, true);
+
+	// TODO: configure mount point with command line option
+	gst_rtsp_mount_points_add_factory(mounts, "/temp", factory);
+	g_object_unref(mounts);
+
+	// attach server to the default maincontext for the event loop
+	gst_rtsp_server_attach(m_server, nullptr);
+}
+
+RemoteViewing::~RemoteViewing() {
+	stop().ignore();
+	/*gst_object_unref(m_bus);
+	stop().ignore();
+	gst_object_unref(m_pipeline);*/
+	g_object_unref(m_loop);
+	// TODO: figure out if this is the correct unref object
+	g_object_unref(m_server);
 }
 
 Error RemoteViewing::start() {
-	if (gst_element_set_state(m_pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+	/*if (gst_element_set_state(m_pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
 		return Error::library("could not start remote viewing");
 	} else {
 		return Error::ok();
-	}
+	}*/
+	g_main_loop_run(m_loop);
+	return Error::ok();
 }
 
 Error RemoteViewing::stop() {
-	if (gst_element_set_state(m_pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
+	/*if (gst_element_set_state(m_pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
 		return Error::library("could not stop remote viewing");
 	} else {
 		return Error::ok();
-	}
+	}*/
+	g_main_loop_quit(m_loop);
+	return Error::ok();
 }
 
 Error RemoteViewing::update() {
-	GstMessage *msg = gst_bus_pop_filtered(m_bus, (GstMessageType) (GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
+	/*GstMessage *msg = gst_bus_pop_filtered(m_bus, (GstMessageType) (GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
 
 	if (msg != nullptr) {
 		GError *err;
@@ -79,13 +117,7 @@ Error RemoteViewing::update() {
 				gst_message_unref(msg);
 				return Error::unknown("unexpected message type recieved from remote viewing gstreamer pipeline");
 		}
-	}
+	}*/
 
 	return Error::ok();
-}
-
-RemoteViewing::~RemoteViewing() {
-	gst_object_unref(m_bus);
-	stop().ignore();
-	gst_object_unref(m_pipeline);
 }
