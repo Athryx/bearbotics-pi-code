@@ -54,10 +54,9 @@ RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width,
 
 RemoteViewing::~RemoteViewing() {
 	if (m_loop_runner_thread.has_value()) {
-		m_loop_runner_thread->detach();
+		stop().ignore();
 	}
 
-	stop().ignore();
 	/*gst_object_unref(m_bus);
 	stop().ignore();
 	gst_object_unref(m_pipeline);*/
