@@ -53,6 +53,10 @@ RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width,
 }
 
 RemoteViewing::~RemoteViewing() {
+	if (m_loop_runner_thread.has_value()) {
+		m_loop_runner_thread->detach();
+	}
+
 	stop().ignore();
 	/*gst_object_unref(m_bus);
 	stop().ignore();
@@ -68,8 +72,12 @@ Error RemoteViewing::start() {
 	} else {
 		return Error::ok();
 	}*/
-	m_loop_runner_thread = std::thread(g_main_loop_run, m_loop);
-	return Error::ok();
+	if (m_loop_runner_thread.has_value()) {
+		return Error::invalid_operation("could not start remote viewing, it is already running");
+	} else {
+		m_loop_runner_thread = std::thread(g_main_loop_run, m_loop);
+		return Error::ok();
+	}
 }
 
 Error RemoteViewing::stop() {
@@ -78,8 +86,14 @@ Error RemoteViewing::stop() {
 	} else {
 		return Error::ok();
 	}*/
-	g_main_loop_quit(m_loop);
-	return Error::ok();
+	if (m_loop_runner_thread.has_value()) {
+		m_loop_runner_thread->detach();
+		g_main_loop_quit(m_loop);
+		m_loop_runner_thread = {};
+		return Error::ok();
+	} else {
+		return Error::invalid_operation("could not stop remote viewing, it is not running");
+	}
 }
 
 Error RemoteViewing::update() {
