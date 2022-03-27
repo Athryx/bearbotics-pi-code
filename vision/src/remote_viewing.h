@@ -11,7 +11,7 @@
 class RemoteViewing {
 	public:
 		// TODO: error propagation with constructor
-		RemoteViewing(const std::string& host, u16 port, int input_width, int input_height, int processing_width, int processing_height, int fps);
+		RemoteViewing(u16 port, const std::string& rtsp_uri, int input_width, int input_height, int processing_width, int processing_height, int fps);
 		~RemoteViewing();
 
 		// sets the pipeline to null state on stop, so it does not have the camera open, so the vision code can read from the camera

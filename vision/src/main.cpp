@@ -77,12 +77,12 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 
 
 	// for some reason localhost doesn't work here
-	program.add_argument("--rtp-host")
-		.help("host to send the remote viewing data to")
-		.default_value(std::string {"127.0.0.1"});
+	program.add_argument("--rtsp-uri")
+		.help("rtsp uri to make remote viewing camera available on")
+		.default_value(std::string {"/remote-viewing"});
 
-	program.add_argument("--rtp-port")
-		.help("port to send the remote viewing data to")
+	program.add_argument("--rtsp-port")
+		.help("port for rtsp server to send data on")
 		.default_value(5000)
 		.action([] (const std::string& str) {
 			return std::atoi(str.c_str());
@@ -338,9 +338,9 @@ int main(int argc, char **argv) {
 	};
 
 
-	const auto rtp_host = program.get("--rtp-host");
-	const auto rtp_port = program.get<int>("--rtp-port");
-	RemoteViewing remote_viewing(rtp_host, rtp_port, cam_width, cam_height, image_width, image_height, max_fps);
+	const auto rtsp_uri = program.get("--rtsp-uri");
+	const auto rtsp_port = program.get<int>("--rtsp-port");
+	RemoteViewing remote_viewing(rtsp_port, rtsp_uri, cam_width, cam_height, image_width, image_height, max_fps);
 
 
 	auto file_name = program.get<std::optional<std::string>>("--camera");

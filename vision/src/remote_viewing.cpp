@@ -9,7 +9,7 @@
 #include "logging.h"
 
 // XXX: this will fail and exit the program if something goes wrong
-RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width, int input_height, int processing_width, int processing_height, int fps) {
+RemoteViewing::RemoteViewing(u16 port, const std::string& rtsp_uri, int input_width, int input_height, int processing_width, int processing_height, int fps) {
 	// use default context for main loop
 	m_loop = g_main_loop_new(nullptr, false);
 
@@ -44,8 +44,7 @@ RemoteViewing::RemoteViewing(const std::string& host, u16 port, int input_width,
 	// stream can be shared across network
 	gst_rtsp_media_factory_set_shared(factory, true);
 
-	// TODO: configure mount point with command line option
-	gst_rtsp_mount_points_add_factory(mounts, "/temp", factory);
+	gst_rtsp_mount_points_add_factory(mounts, rtsp_uri.c_str(), factory);
 	g_object_unref(mounts);
 
 	// attach server to the default maincontext for the event loop
