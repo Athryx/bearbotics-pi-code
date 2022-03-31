@@ -10,5 +10,5 @@ ffmpeg \
 	-f v4l2 -s 640x480 -framerate 30 -i /dev/video0 \
 	-c:v libx264 -profile:v baseline -trellis 0 -subq 1 -level 32 -preset superfast -tune zerolatency -crf 30 -threads 0 -bufsize 1 -refs 1 -coder 0 -b_strategy 0 -bf 0 -sc_threshold 0 -pix_fmt yuv420p -intra-refresh 1 \
 	-x264opts vbv-maxrate=2000:vbv-bufsize=67:slice-max-size=1500:keyint=30:min-keyint=10 \
-	-f mpegts - | nc -l -p 5000
+	-f rtp rtp://localhost:5000
 	#-an -f flv rtmp://localhost:1935/test

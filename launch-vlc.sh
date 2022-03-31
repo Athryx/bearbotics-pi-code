@@ -1,6 +1,9 @@
 #!/bin/sh
 
-vlc --network-caching 50 --live-caching 0 --sout-mux-caching 10
+#vlc --network-caching 50 --live-caching 0 --sout-mux-caching 10
+vlc --network-caching 50 --live-caching 0 --sout-mux-caching 10 vlc-config.sdp
+
+
 # milliseconds
 #vlc --network-caching 50 --mms-timeout 1000000000 vlc-config.sdp
 # seconds
