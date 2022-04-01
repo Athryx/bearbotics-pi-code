@@ -22,5 +22,21 @@ link_directories(
 	${GSTREAMER_RTSP_SERVER_LIBRARY_DIRS}
 )
 
-add_executable(Vision main.cpp util.cpp vision.cpp parallel.cpp remote_viewing.cpp mqtt.cpp logging.cpp error.cpp)
-target_link_libraries(Vision mosquitto ${OpenCV_LIBS} ${GSTREAMER_LIBRARIES} ${GLIB_LIBRARIES} ${GSTREAMER_RTSP_SERVER_LIBRARIES})
+add_executable(Vision
+	main.cpp
+	util.cpp
+	vision.cpp
+	parallel.cpp
+	remote_viewing.cpp
+	mqtt.cpp
+	logging.cpp
+	error.cpp
+)
+
+target_link_libraries(Vision
+	mosquitto
+	${OpenCV_LIBS}
+	${GSTREAMER_LIBRARIES}
+	${GLIB_LIBRARIES}
+	${GSTREAMER_RTSP_SERVER_LIBRARIES}
+)

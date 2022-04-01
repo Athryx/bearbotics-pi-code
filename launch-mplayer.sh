@@ -1,3 +1,3 @@
 #!/bin/sh
 
-nc -u localhost 5000 | mplayer -
+nc localhost 5000 | mplayer -

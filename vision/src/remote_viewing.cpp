@@ -19,8 +19,9 @@ RemoteViewing::RemoteViewing(u16 port, const std::string& rtsp_uri, int input_wi
 	auto pipeline_description = "( v4l2src device=\"/dev/video0\""
 		" ! video/x-raw,width=" + std::to_string(input_width) + ",height=" + std::to_string(input_height) + ",framerate=" + std::to_string(fps) + "/1"
 		" ! videoscale ! video/x-raw,width=" + std::to_string(processing_width) + ",height=" + std::to_string(processing_height) + ",framerate=" + std::to_string(fps) + "/1"
-		" ! videoscale ! videoconvert ! x264enc tune=zerolatency bitrate=500 speed-preset=superfast"
-		" ! rtph264pay name=pay0 pt=96 )";
+		" ! videoconvert ! video/x-raw,format=Y444"
+		" ! x264enc quantizer=25 tune=zerolatency speed-preset=superfast intra-refresh=true ref=1 sliced-threads=true"
+		" ! rtph264pay aggregate-mode=zero-latency name=pay0 pt=96 )";
 
 	/*GstElement *pipeline = gst_parse_launch(pipeline_description.c_str(), nullptr);
 	assert(m_pipeline != nullptr);
