@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gst/gst.h>
-#include <gst/rtsp-server/rtsp-server-object.h>
+#include <gst/rtsp-server/rtsp-server.h>
 #include <string>
 #include <thread>
 #include <optional>

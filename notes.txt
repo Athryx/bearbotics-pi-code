@@ -3,7 +3,7 @@ To do this, edit the file /boot/config.txt, and change the line
 hdmi_force_hotplug=1
 to
 hdmi_force_hotplug=0
-or comment it our.
+or comment it out.
 see https://www.shellhacks.com/raspberry-pi-force-hdmi-hotplug/
 
 to auto start vision on the pi at boot, edit the file /etc/rc.local

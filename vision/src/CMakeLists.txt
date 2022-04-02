@@ -33,7 +33,9 @@ add_executable(Vision
 	error.cpp
 )
 
+# the pthread here is needed to get this to build on the pi
 target_link_libraries(Vision
+	pthread
 	mosquitto
 	${OpenCV_LIBS}
 	${GSTREAMER_LIBRARIES}
