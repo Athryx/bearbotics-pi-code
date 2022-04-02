@@ -18,15 +18,16 @@ class RemoteViewing {
 		Error start();
 		Error stop();
 
-		// TODO: move logging from here into main.cpp
+		// TODO: figure out how to check if an error has occured
 		Error update();
 
 	private:
+		// returns GST_RTSP_FILTER_REMOVE for all clients, used for shutting down remote viewing
+		static GstRTSPFilterResult remove_clients(GstRTSPServer *server, GstRTSPClient *client, gpointer data);
+
 		// thread that runs the g main loop
 		std::optional<std::thread> m_loop_runner_thread {};
 
 		GMainLoop *m_loop;
-		GstElement *m_pipeline;
-		GstBus *m_bus;
 		GstRTSPServer *m_server;
 };
