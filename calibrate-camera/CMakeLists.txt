@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
-project(hsv-viewer)
+project(calibrate-camera)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(OpenCV REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-add_executable(hsv-viewer main.cpp)
-target_link_libraries(hsv-viewer ${OpenCV_LIBS})
+add_executable(calibrate-camera main.cpp)
+target_link_libraries(calibrate-camera ${OpenCV_LIBS})
