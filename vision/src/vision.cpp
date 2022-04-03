@@ -34,7 +34,7 @@ Error VisionCamera::start() {
 		m_cap.open(*m_filename, cv::CAP_V4L2);
 	} else {
 		// cv::CAP_V4L2 is needed because by default it might use gstreamer, and because of a bug in opencv, this causes open to fail
-		// if this is ever run not on linux, this will likely need to be changed
+		// if this is ever run not on linux, this will need to be changed
 		m_cap.open(0, cv::CAP_V4L2);
 		m_cap.set(cv::CAP_PROP_FRAME_WIDTH, m_cam_width);
 		m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, m_cam_height);
