@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(Vision)
+project(vision)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
@@ -22,7 +22,7 @@ link_directories(
 	${GSTREAMER_RTSP_SERVER_LIBRARY_DIRS}
 )
 
-add_executable(Vision
+add_executable(vision
 	main.cpp
 	util.cpp
 	vision.cpp
@@ -34,7 +34,7 @@ add_executable(Vision
 )
 
 # the pthread here is needed to get this to build on the pi
-target_link_libraries(Vision
+target_link_libraries(vision
 	pthread
 	mosquitto
 	${OpenCV_LIBS}
