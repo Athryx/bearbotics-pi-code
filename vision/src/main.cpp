@@ -103,13 +103,15 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 
 
 	program.add_argument("-r", "--remote-viewing")
-		.help("mode to start in, by default it is vision, unless this flag is specified, than it starts in remote viewing")
+		.help("start in remote viewing mode if thie flag is specified, otherwise start in vision mode")
 		.default_value(Mode::Vision)
+		.default_repr("vision")
 		.implicit_value(Mode::RemoteViewing);
 
 	program.add_argument("--target-type")
-		.help("what type of target to look for, default is all")
+		.help("what type of target to look for")
 		.default_value(TargetType::All)
+		.default_repr("all")
 		.action([] (const std::string& str) {
 			if (str == "red-ball") {
 				return TargetType::RedBall;
@@ -185,6 +187,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 	program.add_argument("-a", "--camera")
 		.help("camera device file name to process, if no file name is given, use camera 0")
 		.default_value(std::optional<std::string> {})
+		.show_default(false)
 		.action([] (const std::string& str) -> std::optional<std::string> {
 			return str;
 		});
