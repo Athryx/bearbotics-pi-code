@@ -41,6 +41,7 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 			}
 		});
 
+
 	program.add_argument("-w", "--cam-width")
 		.help("width of image read in from camera in pixels")
 		.default_value(640)
@@ -85,12 +86,13 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 		});
 
 
-	// TODO: implement
-	program.add_argument("-i", "--input")
-		.help("image of chessboard, if this argument is used, the image will be used to calibrate the camera");
-
 	program.add_argument("-o", "--output")
-		.help("output file name of camera calibration constants");
+		.help("output file name of camera calibration constants")
+		.default_value(std::string {"camera_calibration.xml"});
+
+	program.add_argument("input")
+		.help("input images to calibrate camera with")
+		.remaining();
 
 
 	try {
@@ -107,6 +109,8 @@ argparse::ArgumentParser parse_args(int argc, char **argv) {
 int main(int argc, char **argv) {
 	auto program = parse_args(argc, argv);
 
+	const Mode mode = program.get<Mode>("--mode");
+
 	const int cam_width = program.get<int>("--cam-width");
 	const int cam_height = program.get<int>("--cam-height");
 	const int fps = program.get<int>("--fps");
@@ -114,7 +118,11 @@ int main(int argc, char **argv) {
 
 	cv::Size chessboard_size(program.get<int>("--chessboard-width") - 1, program.get<int>("--chessboard-height") - 1);
 
-	//const std::string output_file = program.get("--output");
+	const std::string output_file = program.get("--output");
+	std::vector<std::string> input_files;
+	if (program.is_used("input")) {
+		input_files = program.get<std::vector<std::string>>("input");
+	}
 
 	cv::VideoCapture cap;
 
