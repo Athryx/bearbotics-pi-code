@@ -242,5 +242,7 @@ int main(int argc, char **argv) {
 
 		file.write("camera_matrix", camera_matrix);
 		file.write("distortion_matrix", distortion_matrix);
+
+		file.release();
 	}
 }
