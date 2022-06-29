@@ -459,9 +459,11 @@ int main(int argc, char **argv) {
 						}
 					}
 
-					auto result = mqtt_client->publish(mqtt_topic, std::string(msg_buf));
-					if (result.is_err()) {
-						lg::error("could not publish vision data to mqtt: %s", result.to_string().c_str());
+					if (serialize_good) {
+						auto result = mqtt_client->publish(mqtt_topic, std::string(msg_buf));
+						if (result.is_err()) {
+							lg::error("could not publish vision data to mqtt: %s", result.to_string().c_str());
+						}
 					}
 				}
 				break;
